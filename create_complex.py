@@ -1,10 +1,11 @@
 import uuid
 from enum import Enum
 from uuid import UUID
-
+from furl import furl
+from telethon import Button
 from session import create_complex_cache
 
-
+# region data
 class CreateComplexStep(Enum):
     SET_ID = 1
     APPROVE_ID = 2
@@ -86,28 +87,67 @@ class CreateComplexModel:
             return CreateComplexStep.ALL_SET
         else:
             raise RuntimeError("Illegal CreateComplex state")
+# endregion
 
-
-async def is_complex_id_unique(complex_id) -> bool:
+# region private
+async def __is_complex_id_unique(bot, complex_id) -> bool:
     # TODO parse channel messages and check uniqueness
     return True
 
 
-async def handle_next_step_create_complex(bot, user_id, event):
-    create_complex: CreateComplexModel = create_complex_cache[user_id]
-    current_step = create_complex.get_next_step()
-    if current_step == CreateComplexStep.SET_ID:
-        pass
+async def __validate_complex_id(bot, user_id, complex_id) -> bool:
+    if not complex_id.is_digit():
+        await bot.send_message(user_id, "ID комплекса должно быть положительным числом")
+        return False
+    elif not await __is_complex_id_unique(bot, complex_id):
+        await bot.send_message(user_id, "ID комплекса должен быть уникальным")
+        return False
+    return True
 
 
-async def handle_create_complex(bot, user_id):
-    if user_id not in create_complex_cache:
-        create_complex_model = CreateComplexModel()
-        create_complex_model.user_id = user_id
-        create_complex_model.session_id = uuid.uuid4()
-        await bot.send_message(
+async def __handle_create_complex(bot, user_id):
+    create_complex_model = CreateComplexModel()
+    create_complex_model.user_id = user_id
+    create_complex_model.session_id = uuid.uuid4()
+    create_complex_cache[user_id] = create_complex_model
+    await bot.send_message(
+        user_id,
+        "Введите ID комлекса. ID должен быть уникальным"
+    )
+
+
+async def __handle_set_id(bot, create_complex_model, user_id, event):
+    complex_id = event.message.text
+    if __validate_complex_id(bot, user_id, complex_id):
+        create_complex_model.complex_id = complex_id
+        data = furl("/approve_complex_id")
+        data.add({'session_id': create_complex_model.session_id})
+        bot.send_message(
             user_id,
-            "Введите ID комлекса. ID должен быть уникальным"
+            f"ID комплекса - {complex_id}",
+            buttons=[
+                Button.inline(
+                    text="Подтвердить",
+                    data=data
+                )
+            ]
         )
+
+
+async def __handle_approve_id(bot, create_complex_model, user_id, query):
+    pass
+#endregion
+
+# region public
+async def handle_next_step_create_complex(bot, user_id, event, query):
+    if user_id not in create_complex_cache:
+        await __handle_create_complex(bot, user_id)
     else:
-        await handle_next_step_create_complex(bot, user_id, None)
+        create_complex_model: CreateComplexModel = create_complex_cache[user_id]
+        current_step = create_complex_model.get_next_step()
+        if current_step == CreateComplexStep.SET_ID:
+            await __handle_set_id(bot, create_complex_model, user_id, event)
+        elif current_step == CreateComplexStep.APPROVE_ID:
+            await __handle_approve_id(bot, create_complex_model, user_id, query)
+
+# endregion

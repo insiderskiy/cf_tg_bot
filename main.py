@@ -54,7 +54,13 @@ async def handle_start(event: NewMessage):
 @bot.on(CallbackQuery(pattern="/create_complex"))
 async def handle_create_complex_callback(query):
     sender_id = (await query.get_sender()).id
-    await handle_create_complex(bot, sender_id)
+    await handle_next_step_create_complex(bot, sender_id, None, None)
+
+
+@bot.on(CallbackQuery(pattern="/approve_complex_id"))
+async def handle_approve_complex_id_callback(query):
+    sender_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(bot, sender_id, None, query)
 
 
 @bot.on(NewMessage(incoming=True))
@@ -65,7 +71,7 @@ async def handle_message(event: NewMessage):
         # TODO show help
         pass
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
-        await handle_next_step_create_complex(bot, sender_id, event)
+        await handle_next_step_create_complex(bot, sender_id, event, None)
     else:
         # TODO show help
         pass
