@@ -5,7 +5,7 @@ from furl import furl
 from telethon import TelegramClient, Button
 from telethon.events import NewMessage, Raw, CallbackQuery
 from telethon.tl.types import ChannelParticipantsAdmins
-from create_complex import handle_next_step_create_complex, handle_create_complex
+from create_complex import handle_next_step_create_complex
 from session import get_interaction_in_progress, CurrentInteraction
 
 logging.basicConfig(level=logging.DEBUG)
@@ -48,7 +48,7 @@ async def handle_start(event: NewMessage):
     if current_interaction is CurrentInteraction.NONE:
         await handle_interaction_none(sender_id)
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
-        await handle_next_step_create_complex(bot, sender_id, event)
+        await handle_next_step_create_complex(bot, sender_id, event, None)
 
 
 @bot.on(CallbackQuery(pattern="/create_complex"))
@@ -59,6 +59,12 @@ async def handle_create_complex_callback(query):
 
 @bot.on(CallbackQuery(pattern="/approve_complex_id"))
 async def handle_approve_complex_id_callback(query):
+    sender_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(bot, sender_id, None, query)
+
+
+@bot.on(CallbackQuery(pattern="/approve_complex_name"))
+async def handle_approve_complex_name_callback(query):
     sender_id = (await query.get_sender()).id
     await handle_next_step_create_complex(bot, sender_id, None, query)
 

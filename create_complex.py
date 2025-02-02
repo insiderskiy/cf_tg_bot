@@ -1,6 +1,5 @@
 import uuid
 from enum import Enum
-from uuid import UUID
 from furl import furl
 from telethon import Button
 from session import create_complex_cache
@@ -21,7 +20,7 @@ class CreateComplexStep(Enum):
 
 
 class CreateComplexModel:
-    session_id: UUID = None
+    session_id: str = None
     user_id: int = -1
     complex_id: int = -1
     complex_id_approved: bool = False
@@ -90,6 +89,7 @@ class CreateComplexModel:
 # endregion
 
 # region private
+# region fields validation
 async def __is_complex_id_unique(bot, complex_id) -> bool:
     # TODO parse channel messages and check uniqueness
     return True
@@ -105,14 +105,28 @@ async def __validate_complex_id(bot, user_id, complex_id) -> bool:
     return True
 
 
+async def __validate_session_id(bot, create_complex_model, user_id, query) -> bool:
+    session_id = furl(query.data.decode('utf-8')).args['sid']
+    if session_id != create_complex_model.session_id:
+        try:
+            create_complex_cache.pop(create_complex_model.user_id)
+        except Exception as e:
+            print(e)
+        finally:
+            await bot.send_message(user_id, "Сессия устарела")
+        return False
+    return True
+# endregion
+
 async def __handle_create_complex(bot, user_id):
     create_complex_model = CreateComplexModel()
     create_complex_model.user_id = user_id
-    create_complex_model.session_id = uuid.uuid4()
+    create_complex_model.session_id = str(uuid.uuid4())[:8]
     create_complex_cache[user_id] = create_complex_model
     await bot.send_message(
         user_id,
-        "Введите ID комлекса. ID должен быть уникальным"
+        "Введите ID комлекса. ID должен быть уникальным",
+        buttons = Button.force_reply()
     )
 
 
@@ -121,10 +135,11 @@ async def __handle_set_id(bot, create_complex_model, user_id, event):
     if __validate_complex_id(bot, user_id, complex_id):
         create_complex_model.complex_id = complex_id
         data = furl("/approve_complex_id")
-        data.add({'session_id': create_complex_model.session_id})
-        bot.send_message(
+        data.add({'sid': create_complex_model.session_id})
+        await bot.send_message(
             user_id,
-            f"ID комплекса - {complex_id}",
+            f"ID комплекса - <b>{complex_id}</b>",
+            parse_mode = 'html',
             buttons=[
                 Button.inline(
                     text="Подтвердить",
@@ -135,8 +150,34 @@ async def __handle_set_id(bot, create_complex_model, user_id, event):
 
 
 async def __handle_approve_id(bot, create_complex_model, user_id, query):
-    pass
-#endregion
+    if await __validate_session_id(bot, create_complex_model, user_id, query):
+        create_complex_model.complex_id_approved = True
+        await bot.send_message(user_id, "Введите название комплекса", buttons = Button.force_reply())
+
+
+async def __handle_set_name(bot, create_complex_model, user_id, event):
+    complex_name = event.message.text[:30]
+    create_complex_model.complex_name = complex_name
+    data = furl("/approve_complex_name")
+    data.add({'sid': create_complex_model.session_id})
+    await bot.send_message(
+        user_id,
+        f"Название комплекса - <b>{complex_name}</b>",
+        parse_mode = 'html',
+        buttons=[
+            Button.inline(
+                text="Подтвердить",
+                data=data
+            ),
+        ],
+    )
+
+
+async def __handle_approve_name(bot, create_complex_model, user_id, query):
+    if await __validate_session_id(bot, create_complex_model, user_id, query):
+        create_complex_model.complex_name_approved = True
+        await bot.send_message(user_id, "Добавьте ссылку на видео", buttons = Button.force_reply())
+# endregion
 
 # region public
 async def handle_next_step_create_complex(bot, user_id, event, query):
@@ -145,9 +186,21 @@ async def handle_next_step_create_complex(bot, user_id, event, query):
     else:
         create_complex_model: CreateComplexModel = create_complex_cache[user_id]
         current_step = create_complex_model.get_next_step()
+
         if current_step == CreateComplexStep.SET_ID:
             await __handle_set_id(bot, create_complex_model, user_id, event)
         elif current_step == CreateComplexStep.APPROVE_ID:
-            await __handle_approve_id(bot, create_complex_model, user_id, query)
+            if query is not None:
+                await __handle_approve_id(bot, create_complex_model, user_id, query)
+            else:
+                await __handle_set_id(bot, create_complex_model, user_id, event)
+
+        elif current_step == CreateComplexStep.SET_NAME:
+            await __handle_set_name(bot, create_complex_model, user_id, event)
+        elif current_step == CreateComplexStep.APPROVE_NAME:
+            if query is not None:
+                await __handle_approve_name(bot, create_complex_model, user_id, query)
+            else:
+                await __handle_set_name(bot, create_complex_model, user_id, event)
 
 # endregion
