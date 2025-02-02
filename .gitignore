@@ -2,3 +2,4 @@
 .idea
 .env
 bot.session
+bot.session-journal
