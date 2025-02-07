@@ -90,3 +90,7 @@ async def handle_raw(raw):
 
 bot.start()
 bot.run_until_disconnected()
+
+def some_func():
+    pass
+
