@@ -1,0 +1,4 @@
+BOT_TOKEN = None
+API_ID = None
+API_HASH = None
+CHANNEL_WITH_COMPLEXES_ID = None
