@@ -5,8 +5,7 @@ from furl import furl
 from telethon import Button
 from session import create_complex_cache
 import validators
-import env_variables_holder as evh
-
+import globals as g
 
 # region data
 class CreateComplexStep(Enum):
@@ -101,26 +100,26 @@ class CreateComplexModel:
 
 # region private
 # region fields validation
-async def __is_complex_id_unique(bot, complex_id) -> bool:
+async def __is_complex_id_unique(complex_id) -> bool:
     # TODO parse channel messages and check uniqueness
     return True
 
 
-async def __validate_complex_id(bot, user_id, complex_id) -> bool:
+async def __validate_complex_id(user_id, complex_id) -> bool:
     if not complex_id.isdigit():
-        await bot.send_message(
+        await g.bot.send_message(
             user_id,
             "ID комплекса должно быть положительным числом. Введите повторно",
             buttons=Button.force_reply()
         )
         return False
-    if not await __is_complex_id_unique(bot, complex_id):
-        await bot.send_message(user_id, "ID комплекса должен быть уникальным")
+    if not await __is_complex_id_unique(complex_id):
+        await g.bot.send_message(user_id, "ID комплекса должен быть уникальным")
         return False
     return True
 
 
-async def __validate_session_id(bot, create_complex_model, user_id, query) -> bool:
+async def __validate_session_id(create_complex_model, user_id, query) -> bool:
     session_id = furl(query.data.decode('utf-8')).args['sid']
     if session_id != create_complex_model.session_id:
         try:
@@ -128,32 +127,32 @@ async def __validate_session_id(bot, create_complex_model, user_id, query) -> bo
         except Exception as e:
             print(e)
         finally:
-            await bot.send_message(user_id, "Сессия устарела")
+            await g.bot.send_message(user_id, "Сессия устарела")
         return False
     return True
 
 
 # endregion
 
-async def __handle_create_complex(bot, user_id):
+async def __handle_create_complex(user_id):
     create_complex_model = CreateComplexModel()
     create_complex_model.user_id = user_id
     create_complex_model.session_id = str(uuid.uuid4())[:8]
     create_complex_cache[user_id] = create_complex_model
-    await bot.send_message(
+    await g.bot.send_message(
         user_id,
         "Введите ID комлекса. ID должен быть уникальным",
         buttons=Button.force_reply()
     )
 
 
-async def __handle_set_id(bot, create_complex_model, user_id, event):
+async def __handle_set_id(create_complex_model, user_id, event):
     complex_id = event.message.text
-    if await __validate_complex_id(bot, user_id, complex_id):
+    if await __validate_complex_id(user_id, complex_id):
         create_complex_model.complex_id = complex_id
         data = furl("/approve_complex_id")
         data.add({'sid': create_complex_model.session_id})
-        await bot.send_message(
+        await g.bot.send_message(
             user_id,
             f"ID комплекса - <b>{complex_id}</b>",
             parse_mode='html',
@@ -166,18 +165,18 @@ async def __handle_set_id(bot, create_complex_model, user_id, event):
         )
 
 
-async def __handle_approve_id(bot, create_complex_model, user_id, query):
-    if await __validate_session_id(bot, create_complex_model, user_id, query):
+async def __handle_approve_id(create_complex_model, user_id, query):
+    if await __validate_session_id(create_complex_model, user_id, query):
         create_complex_model.complex_id_approved = True
-        await bot.send_message(user_id, "Введите название комплекса", buttons=Button.force_reply())
+        await g.bot.send_message(user_id, "Введите название комплекса", buttons=Button.force_reply())
 
 
-async def __handle_set_name(bot, create_complex_model, user_id, event):
+async def __handle_set_name(create_complex_model, user_id, event):
     complex_name = event.message.text[:30]
     create_complex_model.complex_name = complex_name
     data = furl("/approve_complex_name")
     data.add({'sid': create_complex_model.session_id})
-    await bot.send_message(
+    await g.bot.send_message(
         user_id,
         f"Название комплекса - <b>{complex_name}</b>",
         parse_mode='html',
@@ -190,19 +189,19 @@ async def __handle_set_name(bot, create_complex_model, user_id, event):
     )
 
 
-async def __handle_approve_name(bot, create_complex_model, user_id, query):
-    if await __validate_session_id(bot, create_complex_model, user_id, query):
+async def __handle_approve_name(create_complex_model, user_id, query):
+    if await __validate_session_id(create_complex_model, user_id, query):
         create_complex_model.complex_name_approved = True
-        await bot.send_message(user_id, "Добавьте ссылку на видео", buttons=Button.force_reply())
+        await g.bot.send_message(user_id, "Добавьте ссылку на видео", buttons=Button.force_reply())
 
 
-async def __handle_set_video(bot, create_complex_model, user_id, event):
+async def __handle_set_video(create_complex_model, user_id, event):
     video_url = event.message.text
     if validators.url(video_url):
         create_complex_model.complex_video_url = video_url
         data = furl("/approve_complex_video")
         data.add({'sid': create_complex_model.session_id})
-        await bot.send_message(
+        await g.bot.send_message(
             user_id,
             f"Видео url - <b>{video_url}</b>",
             parse_mode='html',
@@ -214,25 +213,25 @@ async def __handle_set_video(bot, create_complex_model, user_id, event):
             ]
         )
     else:
-        await bot.send_message(
+        await g.bot.send_message(
             user_id,
             "Некорректный url. Проверьте и введите повторно",
             buttons=Button.force_reply()
         )
 
 
-async def __handle_approve_video(bot, create_complex_model, user_id, query):
-    if await __validate_session_id(bot, create_complex_model, user_id, query):
+async def __handle_approve_video(create_complex_model, user_id, query):
+    if await __validate_session_id(create_complex_model, user_id, query):
         create_complex_model.complex_video_url_approved = True
-        await bot.send_message(user_id, "Введите правила выполнения комплекса", buttons=Button.force_reply())
+        await g.bot.send_message(user_id, "Введите правила выполнения комплекса", buttons=Button.force_reply())
 
 
-async def __handle_set_rules(bot, create_complex_model, user_id, event):
+async def __handle_set_rules(create_complex_model, user_id, event):
     rules = event.message.text[:2048]
     create_complex_model.complex_rules = rules
     data = furl("/approve_complex_rules")
     data.add({'sid': create_complex_model.session_id})
-    await bot.send_message(
+    await g.bot.send_message(
         user_id,
         f"Подтвердите правила выполнения комплекса",
         buttons=[
@@ -244,12 +243,12 @@ async def __handle_set_rules(bot, create_complex_model, user_id, event):
     )
 
 
-async def __handle_approve_rules(bot, create_complex_model, user_id, query):
-    if await __validate_session_id(bot, create_complex_model, user_id, query):
+async def __handle_approve_rules(create_complex_model, user_id, query):
+    if await __validate_session_id(create_complex_model, user_id, query):
         create_complex_model.complex_rules_approved = True
         data = furl("/set_complex_result_type")
         data.add({'sid': create_complex_model.session_id})
-        await bot.send_message(
+        await g.bot.send_message(
             user_id,
             "Выберите тип результата",
             buttons=[
@@ -265,21 +264,21 @@ async def __handle_approve_rules(bot, create_complex_model, user_id, query):
         )
 
 
-async def __handle_set_type(bot, create_complex_model, user_id, query):
-    if await __validate_session_id(bot, create_complex_model, user_id, query):
+async def __handle_set_type(create_complex_model, user_id, query):
+    if await __validate_session_id(create_complex_model, user_id, query):
         type = furl(query.data.decode('utf-8')).args['type']
         if type == "time":
             create_complex_model.is_time = True
         elif type == "reps":
             create_complex_model.is_reps = True
         await gather(
-            bot.send_message(
-                evh.CHANNEL_WITH_COMPLEXES_ID,
+            g.bot.send_message(
+                g.CHANNEL_WITH_COMPLEXES_ID,
                 create_complex_model.create_text(),
                 parse_mode = 'html',
                 link_preview=True
             ),
-            bot.send_message(
+            g.bot.send_message(
                 user_id,
                 "Комплекс добавлен"
             )
@@ -289,46 +288,46 @@ async def __handle_set_type(bot, create_complex_model, user_id, query):
 # endregion
 
 # region public
-async def handle_next_step_create_complex(bot, user_id, event, query):
+async def handle_next_step_create_complex(user_id, event, query):
     if user_id not in create_complex_cache:
-        await __handle_create_complex(bot, user_id)
+        await __handle_create_complex(user_id)
     else:
         create_complex_model: CreateComplexModel = create_complex_cache[user_id]
         current_step = create_complex_model.get_next_step()
 
         if current_step == CreateComplexStep.SET_ID:
-            await __handle_set_id(bot, create_complex_model, user_id, event)
+            await __handle_set_id(create_complex_model, user_id, event)
         elif current_step == CreateComplexStep.APPROVE_ID:
             if query is not None:
-                await __handle_approve_id(bot, create_complex_model, user_id, query)
+                await __handle_approve_id(create_complex_model, user_id, query)
             else:
-                await __handle_set_id(bot, create_complex_model, user_id, event)
+                await __handle_set_id(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_NAME:
-            await __handle_set_name(bot, create_complex_model, user_id, event)
+            await __handle_set_name(create_complex_model, user_id, event)
         elif current_step == CreateComplexStep.APPROVE_NAME:
             if query is not None:
-                await __handle_approve_name(bot, create_complex_model, user_id, query)
+                await __handle_approve_name(create_complex_model, user_id, query)
             else:
-                await __handle_set_name(bot, create_complex_model, user_id, event)
+                await __handle_set_name(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_VIDEO:
-            await __handle_set_video(bot, create_complex_model, user_id, event)
+            await __handle_set_video(create_complex_model, user_id, event)
         elif current_step == CreateComplexStep.APPROVE_VIDEO:
             if query is not None:
-                await __handle_approve_video(bot, create_complex_model, user_id, query)
+                await __handle_approve_video(create_complex_model, user_id, query)
             else:
-                await __handle_set_video(bot, create_complex_model, user_id, event)
+                await __handle_set_video(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_RULES:
-            await __handle_set_rules(bot, create_complex_model, user_id, event)
+            await __handle_set_rules(create_complex_model, user_id, event)
         elif current_step == CreateComplexStep.APPROVE_RULES:
             if query is not None:
-                await __handle_approve_rules(bot, create_complex_model, user_id, query)
+                await __handle_approve_rules(create_complex_model, user_id, query)
             else:
-                await __handle_set_rules(bot, create_complex_model, user_id, event)
+                await __handle_set_rules(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_TYPE:
-            await __handle_set_type(bot, create_complex_model, user_id, query)
+            await __handle_set_type(create_complex_model, user_id, query)
 
 # endregion
