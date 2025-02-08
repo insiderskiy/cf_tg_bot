@@ -26,19 +26,41 @@ async def is_admin(id) -> bool:
     return False
 
 
-async def handle_interaction_none(sender_id):
-    if await is_admin(sender_id):
-        data = furl("/create_complex")
-        await bot.send_message(
-            sender_id,
-            "Выберите действие",
-            buttons=[
-                Button.inline(
-                    text="Добавить комплекс",
-                    data=data
-                ),
-            ],
-        )
+async def is_participant(id) -> bool:
+    async for user in bot.iter_participants(evh.CHANNEL_WITH_COMPLEXES_ID):
+        if user.id == id:
+            return True
+    return False
+
+
+def get_start_action(event):
+    arr = event.message.text.split(' ')
+    if len(arr) > 1:
+        action = arr[1]
+        if action.startswith("set_result_"):
+            complex_id = action.split('_')[-1]
+            return 'set_result', complex_id
+    else:
+        return None
+
+async def handle_interaction_none(event, sender_id):
+    start_action = get_start_action(event)
+    if start_action is None:
+        if await is_admin(sender_id):
+            data = furl("/create_complex")
+            await bot.send_message(
+                sender_id,
+                "Выберите действие",
+                buttons=[
+                    Button.inline(
+                        text="Добавить комплекс",
+                        data=data
+                    ),
+                ],
+            )
+    elif start_action[0] == 'set_result':
+        if await is_participant(id):
+            pass
 
 
 @bot.on(NewMessage(incoming=True, pattern='/start'))
@@ -46,7 +68,7 @@ async def handle_start(event: NewMessage):
     sender_id = (await event.get_sender()).id
     current_interaction = get_interaction_in_progress(sender_id)
     if current_interaction is CurrentInteraction.NONE:
-        await handle_interaction_none(sender_id)
+        await handle_interaction_none(event, sender_id)
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
         await handle_next_step_create_complex(bot, sender_id, event, None)
 

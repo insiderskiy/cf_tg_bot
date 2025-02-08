@@ -93,7 +93,9 @@ class CreateComplexModel:
                 f"<b>{self.complex_name}</b>\n\n"
                 f"<a href='{self.complex_video_url}'>Видео</a>\n\n"
                 f"<i>{self.complex_rules}</i>\n\n"
-                f"{t}")
+                f"{t}\n\n"
+                f"<a href='https://t.me/work_out_tg_bot?start=set_result_{self.complex_id}'>"
+                f"Записать свой результат</a>")
 
 # endregion
 
