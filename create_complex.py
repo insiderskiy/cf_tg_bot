@@ -274,7 +274,8 @@ async def __handle_set_type(bot, create_complex_model, user_id, query):
             bot.send_message(
                 evh.CHANNEL_WITH_COMPLEXES_ID,
                 create_complex_model.create_text(),
-                parse_mode = 'html'
+                parse_mode = 'html',
+                link_preview=True
             ),
             bot.send_message(
                 user_id,
