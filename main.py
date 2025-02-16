@@ -69,7 +69,7 @@ async def handle_interaction_none(event, sender_id):
             )
     elif start_action[0] == 'set_result':
         if await is_participant(sender_id):
-            await handle_next_step_set_complex_result(sender_id, start_action[1])
+            await handle_next_step_set_complex_result(sender_id, start_action[1], event=event)
 
 
 @g.bot.on(NewMessage(incoming=True, pattern='/start'))
@@ -80,6 +80,8 @@ async def handle_start(event: NewMessage):
         await handle_interaction_none(event, sender_id)
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
         await handle_next_step_create_complex(sender_id, event, None)
+    elif current_interaction is CurrentInteraction.SET_COMPLEX_RESULT:
+        await handle_next_step_set_complex_result(sender_id, event = event)
 
 
 @g.bot.on(CallbackQuery(pattern="/create_complex"))
@@ -127,6 +129,8 @@ async def handle_message(event: NewMessage):
         pass
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
         await handle_next_step_create_complex(sender_id, event, None)
+    elif current_interaction is CurrentInteraction.SET_COMPLEX_RESULT:
+        await handle_next_step_set_complex_result(sender_id, event = event)
     else:
         # TODO show help
         pass

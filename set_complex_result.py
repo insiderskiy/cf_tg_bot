@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from enum import Enum
 from telethon import Button
@@ -15,8 +16,9 @@ class SetResultStep(Enum):
 
 class SetResultModel:
     session_id: str = None
+    start_time: datetime.datetime = None
     user_id: int = -1
-    complex_model = None
+    complex = None
     msg = None,
     result: str = None
     video = None
@@ -36,7 +38,7 @@ class SetResultModel:
 class ComplexModel:
     complex_id: int = -1
     complex_name: str = None
-    complex_video = None
+    complex_video_url = None
     complex_rules: str = None
     is_time: bool = False
     is_reps: bool = False
@@ -52,7 +54,7 @@ def __parse_complex_from_msg(msg):
         model = ComplexModel()
         model.complex_id = parts[0].replace('ID: **', '').replace('**', '')
         model.complex_name = parts[1].replace('**', '')
-        model.complex_video = parts[2].split('](')[1][:-1]
+        model.complex_video_url = parts[2].split('](')[1][:-1]
         model.complex_rules = parts[3]
         if parts[4] == 'time':
             model.is_time = True
@@ -71,21 +73,30 @@ async def __create_result_model(user_id, complex_id):
             set_result_model = SetResultModel()
             set_result_model.session_id = str(uuid.uuid4())[:8]
             set_result_model.user_id = user_id
-            set_result_model.complex_model = complex_model
+            set_result_model.complex = complex_model
             set_result_model.msg = msg
             return set_result_model
 
 
-async def __process_set_result_init(user_id, result_model):
-    if result_model.complex_model.is_time:
-        msg = "Укажите время выполнения комплекса. Формат - минуты:секунды"
+async def __handle_set_result_init(user_id, complex_id, event):
+    result_model = await __create_result_model(user_id, complex_id)
+    if result_model is not None:
+        result_model.start_time = event.message.date
+        set_complex_result_cache[user_id] = result_model
+        if result_model.complex.is_time:
+            msg = "Укажите время выполнения комплекса. Формат - минуты:секунды"
+        else:
+            msg = "Укажите количество повторений"
+        await g.bot.send_message(
+            user_id,
+            msg,
+            buttons=Button.force_reply()
+        )
     else:
-        msg = "Укажите количество повторений"
-    await g.bot.send_message(
-        user_id,
-        msg,
-        buttons=Button.force_reply()
-    )
+        await g.bot.send_message(
+            user_id,
+            "Комплекс не найден"
+        )
 
 
 async def __send_incorrect_result(user_id):
@@ -103,7 +114,7 @@ async def __send_set_video(user_id):
 
 
 async def __process_set_time_or_reps(user_id, result_model, event):
-    if result_model.is_time:
+    if result_model.complex.is_time:
         time = event.text
         time_splitted = time.split(':')
         if (len(time_splitted) != 2
@@ -123,6 +134,8 @@ async def __process_set_time_or_reps(user_id, result_model, event):
 
 
 async def __process_set_video(user_id, result_model, event):
+    video = await g.bot.download_media(event.message.video)
+    result_model.video = video
     pass
 
 
@@ -135,20 +148,16 @@ async def handle_next_step_set_complex_result(
         event=None,
         query=None):
 
-    if user_id in set_complex_result_cache:
+    if user_id not in set_complex_result_cache:
+        await __handle_set_result_init(user_id, complex_id, event)
+    else:
         result_model = set_complex_result_cache[user_id]
+
+        if (event.message.date - result_model.start_time).seconds < 1:
+            return
+
         next_step = result_model.get_next_step()
         if next_step is SetResultStep.SET_REPS_OR_TIME:
             await __process_set_time_or_reps(user_id, result_model, event)
         elif next_step is SetResultStep.SET_VIDEO:
             await __process_set_video(user_id, result_model, event)
-    else:
-        result_model = await __create_result_model(user_id, complex_id)
-        if result_model is not None:
-            set_complex_result_cache[user_id] = result_model
-            await __process_set_result_init(user_id, result_model)
-        else:
-            await g.bot.send_message(
-                user_id,
-                "Комплекс не найден"
-            )
