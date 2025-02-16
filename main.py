@@ -5,7 +5,7 @@ from furl import furl
 from telethon import TelegramClient, Button
 from telethon.events import NewMessage, Raw, CallbackQuery
 from telethon.tl.types import ChannelParticipantsAdmins
-from set_complex_result import process_set_complex_result
+from set_complex_result import handle_next_step_set_complex_result
 from create_complex import handle_next_step_create_complex
 from session import get_interaction_in_progress, CurrentInteraction
 import globals as g
@@ -19,8 +19,14 @@ g.API_ID = os.getenv("API_ID")
 g.API_HASH = os.getenv("API_HASH")
 g.CHANNEL_WITH_COMPLEXES_ID = os.getenv("CHANNEL_WITH_COMPLEXES")
 g.BOT_NAME = os.getenv("BOT_NAME")
+g.PHONE = os.getenv("PHONE")
+g.PASS = os.getenv("PASS")
 
 g.bot = TelegramClient('bot', g.API_ID, g.API_HASH).start(bot_token=g.BOT_TOKEN)
+g.app = TelegramClient('app', g.API_ID, g.API_HASH).start(
+    phone=g.PHONE,
+    password=g.PASS
+)
 
 async def is_admin(id) -> bool:
     async for user in g.bot.iter_participants(g.CHANNEL_WITH_COMPLEXES_ID, filter=ChannelParticipantsAdmins()):
@@ -63,7 +69,7 @@ async def handle_interaction_none(event, sender_id):
             )
     elif start_action[0] == 'set_result':
         if await is_participant(sender_id):
-            await process_set_complex_result(sender_id, start_action[1])
+            await handle_next_step_set_complex_result(sender_id, start_action[1])
 
 
 @g.bot.on(NewMessage(incoming=True, pattern='/start'))
@@ -129,7 +135,6 @@ async def handle_message(event: NewMessage):
 @g.bot.on(Raw())
 async def handle_raw(raw):
     print(raw)
-
 
 g.bot.start()
 g.bot.run_until_disconnected()

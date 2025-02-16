@@ -88,13 +88,13 @@ class CreateComplexModel:
             t = "reps"
         else:
             t = "time"
-        return (f"<b>#{self.complex_id}</b>\n\n"
-                f"<b>{self.complex_name}</b>\n\n"
-                f"<a href='{self.complex_video_url}'>Видео</a>\n\n"
-                f"<i>{self.complex_rules}</i>\n\n"
-                f"{t}\n\n"
+        return (f"ID: <b>{self.complex_id}</b>\u00A0\n\n"
+                f"<b>{self.complex_name}</b>\u00A0\n\n"
+                f"<a href='{self.complex_video_url}'>Видео</a>\u00A0\n\n"
+                f"{self.complex_rules}\u00A0\n\n"
+                f"{t}\u00A0\n\n"
                 f"<a href='https://t.me/work_out_tg_bot?start=set_result_{self.complex_id}'>"
-                f"Записать свой результат</a>")
+                f"Записать свой результат</a>\n")
 
 # endregion
 
