@@ -65,7 +65,7 @@ class CreateComplexModel:
                 f"<a href='{self.complex_video_url}'>Видео</a>\u00A0\n\n"
                 f"{self.complex_rules}\u00A0\n\n"
                 f"{t}\u00A0\n\n"
-                f"<a href='https://t.me/work_out_tg_bot?start=set_result_{self.complex_id}'>"
+                f"<a href='https://t.me/{g.BOT_NAME}?start=set_result_{self.complex_id}'>"
                 f"Записать свой результат</a>\n")
 
 
