@@ -66,7 +66,7 @@ def __parse_complex_from_msg(msg):
 
 
 async def __create_result_model(user_id, complex_id):
-    async for msg in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES_ID):
+    async for msg in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES):
         complex_model = __parse_complex_from_msg(msg)
         if complex_model is not None and complex_model.complex_id == complex_id:
             set_result_model = SetResultModel()
@@ -138,9 +138,9 @@ async def __get_title():
 
 
 async def __remove_prev_result_if_set(user_id, msg_id):
-    async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES_ID, reply_to=msg_id):
+    async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, reply_to=msg_id):
         if (f"id={user_id}" in reply.text
-                and reply.peer_id is PeerChannel
+                and isinstance(reply.peer_id, PeerChannel)
                 and reply.peer_id.channel_id == g.CHANNEL_WITH_COMPLEXES_ID):
             await g.app.delete_messages(reply.chat.id, reply.id)
 
@@ -152,7 +152,7 @@ async def __process_set_video(user_id, user_name, result_model, event):
             f"Результат: {result_model.result}")
     title = await __get_title()
     await g.app.send_file(
-        entity=g.CHANNEL_WITH_COMPLEXES_ID,
+        entity=g.CHANNEL_WITH_COMPLEXES,
         file=video,
         caption=text,
         parse_mode='markdown',

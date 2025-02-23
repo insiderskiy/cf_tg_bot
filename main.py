@@ -17,7 +17,8 @@ load_dotenv()
 g.BOT_TOKEN = os.getenv("BOT_TOKEN")
 g.API_ID = os.getenv("API_ID")
 g.API_HASH = os.getenv("API_HASH")
-g.CHANNEL_WITH_COMPLEXES_ID = os.getenv("CHANNEL_WITH_COMPLEXES")
+g.CHANNEL_WITH_COMPLEXES = os.getenv("CHANNEL_WITH_COMPLEXES")
+g.CHANNEL_WITH_COMPLEXES_ID = int(os.getenv("CHANNEL_WITH_COMPLEXES_ID"))
 g.BOT_NAME = os.getenv("BOT_NAME")
 g.PHONE = os.getenv("PHONE")
 g.PASS = os.getenv("PASS")
@@ -29,14 +30,14 @@ g.app = TelegramClient('app', g.API_ID, g.API_HASH).start(
 )
 
 async def is_admin(id) -> bool:
-    async for user in g.bot.iter_participants(g.CHANNEL_WITH_COMPLEXES_ID, filter=ChannelParticipantsAdmins()):
+    async for user in g.bot.iter_participants(g.CHANNEL_WITH_COMPLEXES, filter=ChannelParticipantsAdmins()):
         if user.id == id:
             return True
     return False
 
 
 async def is_participant(id) -> bool:
-    async for user in g.bot.iter_participants(g.CHANNEL_WITH_COMPLEXES_ID):
+    async for user in g.bot.iter_participants(g.CHANNEL_WITH_COMPLEXES):
         if user.id == id:
             return True
     return False

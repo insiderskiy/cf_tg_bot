@@ -284,7 +284,7 @@ async def __handle_set_type(create_complex_model, user_id, query):
             create_complex_model.is_reps = True
         await gather(
             g.bot.send_message(
-                g.CHANNEL_WITH_COMPLEXES_ID,
+                g.CHANNEL_WITH_COMPLEXES,
                 create_complex_model.create_text(),
                 parse_mode = 'html',
                 link_preview=True
