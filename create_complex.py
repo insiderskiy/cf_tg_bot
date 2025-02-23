@@ -12,7 +12,6 @@ import globals as g
 class CreateComplexStep(Enum):
     SET_ID = 1
     SET_NAME = 3
-    APPROVE_NAME = 4
     SET_VIDEO = 5
     APPROVE_VIDEO = 6
     SET_RULES = 7
@@ -26,7 +25,6 @@ class CreateComplexModel:
     user_id: int = -1
     complex_id: int = -1
     complex_name: str = None
-    complex_name_approved: bool = False
     complex_video_url: str = None
     complex_video_url_approved: bool = False
     complex_rules: str = None
@@ -41,7 +39,6 @@ class CreateComplexModel:
                 and self.complex_id != -1
 
                 and self.complex_name is not None
-                and self.complex_name_approved
 
                 and self.complex_video_url is not None
                 and self.complex_video_url_approved
@@ -57,8 +54,6 @@ class CreateComplexModel:
 
         elif self.complex_name is None:
             return CreateComplexStep.SET_NAME
-        elif not self.complex_name_approved:
-            return CreateComplexStep.APPROVE_NAME
 
         elif self.complex_video_url is None:
             return CreateComplexStep.SET_VIDEO
@@ -155,18 +150,10 @@ async def __handle_set_id(create_complex_model, user_id, event):
 async def __handle_set_name(create_complex_model, user_id, event):
     complex_name = event.message.text[:30]
     create_complex_model.complex_name = complex_name
-    data = furl("/approve_complex_name")
-    data.add({'sid': create_complex_model.session_id})
     await g.bot.send_message(
         user_id,
-        f"Название комплекса - <b>{complex_name}</b>",
-        parse_mode='html',
-        buttons=[
-            Button.inline(
-                text="Подтвердить",
-                data=data
-            ),
-        ],
+        "Добавьте ссылку на видео",
+        buttons=Button.force_reply()
     )
 
 
@@ -294,11 +281,6 @@ async def handle_next_step_create_complex(user_id, event, query):
 
         elif current_step == CreateComplexStep.SET_NAME:
             await __handle_set_name(create_complex_model, user_id, event)
-        elif current_step == CreateComplexStep.APPROVE_NAME:
-            if query is not None:
-                await __handle_approve_name(create_complex_model, user_id, query)
-            else:
-                await __handle_set_name(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_VIDEO:
             await __handle_set_video(create_complex_model, user_id, event)
