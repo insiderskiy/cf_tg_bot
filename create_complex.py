@@ -14,7 +14,6 @@ class CreateComplexStep(Enum):
     SET_NAME = 2
     SET_VIDEO = 3
     SET_RULES = 4
-    APPROVE_RULES = 8
     SET_TYPE = 9
     ALL_SET = 10
 
@@ -26,7 +25,6 @@ class CreateComplexModel:
     complex_name: str = None
     complex_video_url: str = None
     complex_rules: str = None
-    complex_rules_approved: bool = False
     is_time: bool = False
     is_reps: bool = False
 
@@ -41,7 +39,6 @@ class CreateComplexModel:
                 and self.complex_video_url is not None
 
                 and self.complex_rules is not None
-                and self.complex_rules_approved
 
                 and (self.is_time != False or self.is_reps != False))
 
@@ -57,8 +54,6 @@ class CreateComplexModel:
 
         elif self.complex_rules is None:
             return CreateComplexStep.SET_RULES
-        elif not self.complex_rules_approved:
-            return CreateComplexStep.APPROVE_RULES
 
         elif not self.is_reps and not self.is_time:
             return CreateComplexStep.SET_TYPE
@@ -169,23 +164,6 @@ async def __handle_set_video(create_complex_model, user_id, event):
         )
 
 
-async def __handle_set_rules(create_complex_model, user_id, event):
-    rules = event.message.text[:2048]
-    create_complex_model.complex_rules = rules
-    data = furl("/approve_complex_rules")
-    data.add({'sid': create_complex_model.session_id})
-    await g.bot.send_message(
-        user_id,
-        f"Подтвердите правила выполнения комплекса",
-        buttons=[
-            Button.inline(
-                text="Подтвердить",
-                data=data
-            ),
-        ]
-    )
-
-
 def __get_time_data(create_complex_model):
     data = furl("/set_complex_result_type")
     data.add({'sid': create_complex_model.session_id})
@@ -200,23 +178,23 @@ def __get_reps_data(create_complex_model):
     return data
 
 
-async def __handle_approve_rules(create_complex_model, user_id, query):
-    if await __validate_session_id(create_complex_model, user_id, query):
-        create_complex_model.complex_rules_approved = True
-        await g.bot.send_message(
-            user_id,
-            "Выберите тип результата",
-            buttons=[
-                Button.inline(
-                    text="Время",
-                    data=__get_time_data(create_complex_model)
-                ),
-                Button.inline(
-                    text="Повторения",
-                    data=__get_reps_data(create_complex_model)
-                )
-            ]
-        )
+async def __handle_set_rules(create_complex_model, user_id, event):
+    rules = event.message.text[:2048]
+    create_complex_model.complex_rules = rules
+    await g.bot.send_message(
+        user_id,
+        "Выберите тип результата",
+        buttons=[
+            Button.inline(
+                text="Время",
+                data=__get_time_data(create_complex_model)
+            ),
+            Button.inline(
+                text="Повторения",
+                data=__get_reps_data(create_complex_model)
+            )
+        ]
+    )
 
 
 async def __handle_set_type(create_complex_model, user_id, query):
@@ -262,11 +240,6 @@ async def handle_next_step_create_complex(user_id, event, query):
 
         elif current_step == CreateComplexStep.SET_RULES:
             await __handle_set_rules(create_complex_model, user_id, event)
-        elif current_step == CreateComplexStep.APPROVE_RULES:
-            if query is not None:
-                await __handle_approve_rules(create_complex_model, user_id, query)
-            else:
-                await __handle_set_rules(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_TYPE:
             await __handle_set_type(create_complex_model, user_id, query)

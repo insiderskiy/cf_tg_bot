@@ -93,12 +93,6 @@ async def handle_create_complex_callback(query):
     await handle_next_step_create_complex(user_id, None, None)
 
 
-@g.bot.on(CallbackQuery(pattern="/approve_complex_rules"))
-async def handle_approve_complex_rules_callback(query):
-    user_id = (await query.get_sender()).id
-    await handle_next_step_create_complex(user_id, None, query)
-
-
 @g.bot.on(CallbackQuery(pattern="/set_complex_result_type"))
 async def handle_set_complex_result_type_callback(query):
     user_id = (await query.get_sender()).id
