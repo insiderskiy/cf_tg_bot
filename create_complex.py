@@ -7,10 +7,10 @@ from session import create_complex_cache
 import validators
 import globals as g
 
+
 # region data
 class CreateComplexStep(Enum):
     SET_ID = 1
-    APPROVE_ID = 2
     SET_NAME = 3
     APPROVE_NAME = 4
     SET_VIDEO = 5
@@ -25,7 +25,6 @@ class CreateComplexModel:
     session_id: str = None
     user_id: int = -1
     complex_id: int = -1
-    complex_id_approved: bool = False
     complex_name: str = None
     complex_name_approved: bool = False
     complex_video_url: str = None
@@ -40,7 +39,6 @@ class CreateComplexModel:
                 and self.user_id != -1
 
                 and self.complex_id != -1
-                and self.complex_id_approved
 
                 and self.complex_name is not None
                 and self.complex_name_approved
@@ -56,8 +54,6 @@ class CreateComplexModel:
     def get_next_step(self) -> CreateComplexStep:
         if self.complex_id == -1:
             return CreateComplexStep.SET_ID
-        elif not self.complex_id_approved:
-            return CreateComplexStep.APPROVE_ID
 
         elif self.complex_name is None:
             return CreateComplexStep.SET_NAME
@@ -82,7 +78,6 @@ class CreateComplexModel:
         else:
             raise RuntimeError("Illegal CreateComplex state")
 
-
     def create_text(self):
         if self.is_reps:
             t = "reps"
@@ -95,6 +90,7 @@ class CreateComplexModel:
                 f"{t}\u00A0\n\n"
                 f"<a href='https://t.me/work_out_tg_bot?start=set_result_{self.complex_id}'>"
                 f"Записать свой результат</a>\n")
+
 
 # endregion
 
@@ -150,25 +146,10 @@ async def __handle_set_id(create_complex_model, user_id, event):
     complex_id = event.message.text
     if await __validate_complex_id(user_id, complex_id):
         create_complex_model.complex_id = complex_id
-        data = furl("/approve_complex_id")
-        data.add({'sid': create_complex_model.session_id})
         await g.bot.send_message(
             user_id,
-            f"ID комплекса - <b>{complex_id}</b>",
-            parse_mode='html',
-            buttons=[
-                Button.inline(
-                    text="Подтвердить",
-                    data=data
-                )
-            ]
-        )
-
-
-async def __handle_approve_id(create_complex_model, user_id, query):
-    if await __validate_session_id(create_complex_model, user_id, query):
-        create_complex_model.complex_id_approved = True
-        await g.bot.send_message(user_id, "Введите название комплекса", buttons=Button.force_reply())
+            "Введите название комплекса",
+            buttons=Button.force_reply())
 
 
 async def __handle_set_name(create_complex_model, user_id, event):
@@ -256,6 +237,7 @@ def __get_reps_data(create_complex_model):
     data.add({'type': 'reps'})
     return data
 
+
 async def __handle_approve_rules(create_complex_model, user_id, query):
     if await __validate_session_id(create_complex_model, user_id, query):
         create_complex_model.complex_rules_approved = True
@@ -286,7 +268,7 @@ async def __handle_set_type(create_complex_model, user_id, query):
             g.bot.send_message(
                 g.CHANNEL_WITH_COMPLEXES,
                 create_complex_model.create_text(),
-                parse_mode = 'html',
+                parse_mode='html',
                 link_preview=True
             ),
             g.bot.send_message(
@@ -295,6 +277,7 @@ async def __handle_set_type(create_complex_model, user_id, query):
             )
         )
         del create_complex_cache[user_id]
+
 
 # endregion
 
@@ -308,11 +291,6 @@ async def handle_next_step_create_complex(user_id, event, query):
 
         if current_step == CreateComplexStep.SET_ID:
             await __handle_set_id(create_complex_model, user_id, event)
-        elif current_step == CreateComplexStep.APPROVE_ID:
-            if query is not None:
-                await __handle_approve_id(create_complex_model, user_id, query)
-            else:
-                await __handle_set_id(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_NAME:
             await __handle_set_name(create_complex_model, user_id, event)
