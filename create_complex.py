@@ -11,10 +11,9 @@ import globals as g
 # region data
 class CreateComplexStep(Enum):
     SET_ID = 1
-    SET_NAME = 3
-    SET_VIDEO = 5
-    APPROVE_VIDEO = 6
-    SET_RULES = 7
+    SET_NAME = 2
+    SET_VIDEO = 3
+    SET_RULES = 4
     APPROVE_RULES = 8
     SET_TYPE = 9
     ALL_SET = 10
@@ -26,7 +25,6 @@ class CreateComplexModel:
     complex_id: int = -1
     complex_name: str = None
     complex_video_url: str = None
-    complex_video_url_approved: bool = False
     complex_rules: str = None
     complex_rules_approved: bool = False
     is_time: bool = False
@@ -41,7 +39,6 @@ class CreateComplexModel:
                 and self.complex_name is not None
 
                 and self.complex_video_url is not None
-                and self.complex_video_url_approved
 
                 and self.complex_rules is not None
                 and self.complex_rules_approved
@@ -57,8 +54,6 @@ class CreateComplexModel:
 
         elif self.complex_video_url is None:
             return CreateComplexStep.SET_VIDEO
-        elif not self.complex_video_url_approved:
-            return CreateComplexStep.APPROVE_VIDEO
 
         elif self.complex_rules is None:
             return CreateComplexStep.SET_RULES
@@ -157,28 +152,14 @@ async def __handle_set_name(create_complex_model, user_id, event):
     )
 
 
-async def __handle_approve_name(create_complex_model, user_id, query):
-    if await __validate_session_id(create_complex_model, user_id, query):
-        create_complex_model.complex_name_approved = True
-        await g.bot.send_message(user_id, "Добавьте ссылку на видео", buttons=Button.force_reply())
-
-
 async def __handle_set_video(create_complex_model, user_id, event):
     video_url = event.message.text
     if validators.url(video_url):
         create_complex_model.complex_video_url = video_url
-        data = furl("/approve_complex_video")
-        data.add({'sid': create_complex_model.session_id})
         await g.bot.send_message(
             user_id,
-            f"Видео url - <b>{video_url}</b>",
-            parse_mode='html',
-            buttons=[
-                Button.inline(
-                    text="Подтвердить",
-                    data=data
-                ),
-            ]
+            "Введите правила выполнения комплекса",
+            buttons=Button.force_reply()
         )
     else:
         await g.bot.send_message(
@@ -186,12 +167,6 @@ async def __handle_set_video(create_complex_model, user_id, event):
             "Некорректный url. Проверьте и введите повторно",
             buttons=Button.force_reply()
         )
-
-
-async def __handle_approve_video(create_complex_model, user_id, query):
-    if await __validate_session_id(create_complex_model, user_id, query):
-        create_complex_model.complex_video_url_approved = True
-        await g.bot.send_message(user_id, "Введите правила выполнения комплекса", buttons=Button.force_reply())
 
 
 async def __handle_set_rules(create_complex_model, user_id, event):
@@ -284,11 +259,6 @@ async def handle_next_step_create_complex(user_id, event, query):
 
         elif current_step == CreateComplexStep.SET_VIDEO:
             await __handle_set_video(create_complex_model, user_id, event)
-        elif current_step == CreateComplexStep.APPROVE_VIDEO:
-            if query is not None:
-                await __handle_approve_video(create_complex_model, user_id, query)
-            else:
-                await __handle_set_video(create_complex_model, user_id, event)
 
         elif current_step == CreateComplexStep.SET_RULES:
             await __handle_set_rules(create_complex_model, user_id, event)
