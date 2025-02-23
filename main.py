@@ -115,9 +115,9 @@ async def handle_message(event: NewMessage):
         pass
 
 
-@g.bot.on(Raw())
-async def handle_raw(raw):
-    print(raw)
+# @g.bot.on(Raw())
+# async def handle_raw(raw):
+#     print(raw)
 
 g.bot.start()
 g.bot.run_until_disconnected()
