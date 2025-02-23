@@ -1,7 +1,10 @@
 import datetime
+import os
 import uuid
 from enum import Enum
 from telethon import Button
+from telethon.tl.types import PeerChannel
+
 import globals as g
 from session import set_complex_result_cache
 
@@ -10,8 +13,7 @@ from session import set_complex_result_cache
 class SetResultStep(Enum):
     SET_REPS_OR_TIME = 1
     SET_VIDEO = 2
-    APPROVE_DATA = 3
-    ALL_SET = 4
+    ALL_SET = 3
 
 
 class SetResultModel:
@@ -22,15 +24,12 @@ class SetResultModel:
     msg = None,
     result: str = None
     video = None
-    result_approved: bool = False
 
     def get_next_step(self) -> SetResultStep:
         if self.result is None:
             return SetResultStep.SET_REPS_OR_TIME
         elif self.video is None:
             return SetResultStep.SET_VIDEO
-        elif not self.result_approved:
-            return SetResultStep.APPROVE_DATA
         else:
             return SetResultStep.ALL_SET
 
@@ -118,8 +117,8 @@ async def __process_set_time_or_reps(user_id, result_model, event):
         time = event.text
         time_splitted = time.split(':')
         if (len(time_splitted) != 2
-            or not time_splitted[0].isdigit()
-            or not time_splitted[1].isdigit()):
+                or not time_splitted[0].isdigit()
+                or not time_splitted[1].isdigit()):
             await __send_incorrect_result(user_id)
         else:
             result_model.result = time
@@ -133,10 +132,38 @@ async def __process_set_time_or_reps(user_id, result_model, event):
             await __send_set_video(user_id)
 
 
-async def __process_set_video(user_id, result_model, event):
+async def __get_title():
+    # TODO Мотивирующий заголовок, что-то вроде мастер спорта по всем видам спорта
+    return 'Поздравляем, чемпион! '
+
+
+async def __remove_prev_result_if_set(user_id, msg_id):
+    async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES_ID, reply_to=msg_id):
+        if (f"id={user_id}" in reply.text
+                and reply.peer_id is PeerChannel
+                and reply.peer_id.channel_id == g.CHANNEL_WITH_COMPLEXES_ID):
+            await g.app.delete_messages(reply.chat.id, reply.id)
+
+
+async def __process_set_video(user_id, user_name, result_model, event):
+    await __remove_prev_result_if_set(user_id, result_model.msg.id)
     video = await g.bot.download_media(event.message.video)
-    result_model.video = video
-    pass
+    text = (f"\n[{user_name}](tg://user?id={user_id})\n\n"
+            f"Результат: {result_model.result}")
+    title = await __get_title()
+    await g.app.send_file(
+        entity=g.CHANNEL_WITH_COMPLEXES_ID,
+        file=video,
+        caption=text,
+        parse_mode='markdown',
+        comment_to=result_model.msg.id
+    )
+    await g.bot.send_message(
+        user_id,
+        f'{title}Результат отправлен'
+    )
+    os.remove(video)
+    del set_complex_result_cache[user_id]
 
 
 # endregion
@@ -144,10 +171,10 @@ async def __process_set_video(user_id, result_model, event):
 
 async def handle_next_step_set_complex_result(
         user_id,
+        user_name,
         complex_id=None,
         event=None,
         query=None):
-
     if user_id not in set_complex_result_cache:
         await __handle_set_result_init(user_id, complex_id, event)
     else:
@@ -160,4 +187,4 @@ async def handle_next_step_set_complex_result(
         if next_step is SetResultStep.SET_REPS_OR_TIME:
             await __process_set_time_or_reps(user_id, result_model, event)
         elif next_step is SetResultStep.SET_VIDEO:
-            await __process_set_video(user_id, result_model, event)
+            await __process_set_video(user_id, user_name, result_model, event)

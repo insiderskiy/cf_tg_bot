@@ -52,13 +52,13 @@ def get_start_action(event):
     else:
         return None
 
-async def handle_interaction_none(event, sender_id):
+async def handle_interaction_none(event, user_id, user_name):
     start_action = get_start_action(event)
     if start_action is None:
-        if await is_admin(sender_id):
+        if await is_admin(user_id):
             data = furl("/create_complex")
             await g.bot.send_message(
-                sender_id,
+                user_id,
                 "Выберите действие",
                 buttons=[
                     Button.inline(
@@ -68,69 +68,71 @@ async def handle_interaction_none(event, sender_id):
                 ],
             )
     elif start_action[0] == 'set_result':
-        if await is_participant(sender_id):
-            await handle_next_step_set_complex_result(sender_id, start_action[1], event=event)
+        if await is_participant(user_id):
+            await handle_next_step_set_complex_result(user_id, user_name, start_action[1], event=event)
 
 
 @g.bot.on(NewMessage(incoming=True, pattern='/start'))
 async def handle_start(event: NewMessage):
-    sender_id = (await event.get_sender()).id
-    current_interaction = get_interaction_in_progress(sender_id)
+    user = (await event.get_sender())
+    user_id = user.id
+    user_name = user.first_name
+    current_interaction = get_interaction_in_progress(user_id)
     if current_interaction is CurrentInteraction.NONE:
-        await handle_interaction_none(event, sender_id)
+        await handle_interaction_none(event, user_id, user_name)
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
-        await handle_next_step_create_complex(sender_id, event, None)
+        await handle_next_step_create_complex(user_id, event, None)
     elif current_interaction is CurrentInteraction.SET_COMPLEX_RESULT:
-        await handle_next_step_set_complex_result(sender_id, event = event)
+        await handle_next_step_set_complex_result(user_id, user_name, event = event)
 
 
 @g.bot.on(CallbackQuery(pattern="/create_complex"))
 async def handle_create_complex_callback(query):
-    sender_id = (await query.get_sender()).id
-    await handle_next_step_create_complex(sender_id, None, None)
+    user_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(user_id, None, None)
 
 
 @g.bot.on(CallbackQuery(pattern="/approve_complex_id"))
 async def handle_approve_complex_id_callback(query):
-    sender_id = (await query.get_sender()).id
-    await handle_next_step_create_complex(sender_id, None, query)
+    user_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(user_id, None, query)
 
 
 @g.bot.on(CallbackQuery(pattern="/approve_complex_name"))
 async def handle_approve_complex_name_callback(query):
-    sender_id = (await query.get_sender()).id
-    await handle_next_step_create_complex(sender_id, None, query)
+    user_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(user_id, None, query)
 
 
 @g.bot.on(CallbackQuery(pattern="/approve_complex_video"))
 async def handle_approve_complex_video_callback(query):
-    sender_id = (await query.get_sender()).id
-    await handle_next_step_create_complex(sender_id, None, query)
+    user_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(user_id, None, query)
 
 
 @g.bot.on(CallbackQuery(pattern="/approve_complex_rules"))
 async def handle_approve_complex_rules_callback(query):
-    sender_id = (await query.get_sender()).id
-    await handle_next_step_create_complex(sender_id, None, query)
+    user_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(user_id, None, query)
 
 
 @g.bot.on(CallbackQuery(pattern="/set_complex_result_type"))
 async def handle_set_complex_result_type_callback(query):
-    sender_id = (await query.get_sender()).id
-    await handle_next_step_create_complex(sender_id, None, query)
+    user_id = (await query.get_sender()).id
+    await handle_next_step_create_complex(user_id, None, query)
 
 
 @g.bot.on(NewMessage(incoming=True))
 async def handle_message(event: NewMessage):
-    sender_id = (await event.get_sender()).id
-    current_interaction = get_interaction_in_progress(sender_id)
+    user = (await event.get_sender())
+    current_interaction = get_interaction_in_progress(user.id)
     if current_interaction is CurrentInteraction.NONE:
         # TODO show help
         pass
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
-        await handle_next_step_create_complex(sender_id, event, None)
+        await handle_next_step_create_complex(user.id, event, None)
     elif current_interaction is CurrentInteraction.SET_COMPLEX_RESULT:
-        await handle_next_step_set_complex_result(sender_id, event = event)
+        await handle_next_step_set_complex_result(user.id, user.first_name, event = event)
     else:
         # TODO show help
         pass

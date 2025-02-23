@@ -243,22 +243,33 @@ async def __handle_set_rules(create_complex_model, user_id, event):
     )
 
 
+def __get_time_data(create_complex_model):
+    data = furl("/set_complex_result_type")
+    data.add({'sid': create_complex_model.session_id})
+    data.add({'type': 'time'})
+    return data
+
+
+def __get_reps_data(create_complex_model):
+    data = furl("/set_complex_result_type")
+    data.add({'sid': create_complex_model.session_id})
+    data.add({'type': 'reps'})
+    return data
+
 async def __handle_approve_rules(create_complex_model, user_id, query):
     if await __validate_session_id(create_complex_model, user_id, query):
         create_complex_model.complex_rules_approved = True
-        data = furl("/set_complex_result_type")
-        data.add({'sid': create_complex_model.session_id})
         await g.bot.send_message(
             user_id,
             "Выберите тип результата",
             buttons=[
                 Button.inline(
                     text="Время",
-                    data=data.add({'type': 'time'})
+                    data=__get_time_data(create_complex_model)
                 ),
                 Button.inline(
                     text="Повторения",
-                    data=data.add({'type': 'reps'})
+                    data=__get_reps_data(create_complex_model)
                 )
             ]
         )
