@@ -14,8 +14,7 @@ class CreateComplexStep(Enum):
     SET_NAME = 2
     SET_VIDEO = 3
     SET_RULES = 4
-    SET_TYPE = 9
-    ALL_SET = 10
+    SET_TYPE = 5
 
 
 class CreateComplexModel:
@@ -31,15 +30,10 @@ class CreateComplexModel:
     def all_fields_set(self) -> bool:
         return (self.session_id is not None
                 and self.user_id != -1
-
                 and self.complex_id != -1
-
                 and self.complex_name is not None
-
                 and self.complex_video_url is not None
-
                 and self.complex_rules is not None
-
                 and (self.is_time != False or self.is_reps != False))
 
     def get_next_step(self) -> CreateComplexStep:
@@ -58,8 +52,6 @@ class CreateComplexModel:
         elif not self.is_reps and not self.is_time:
             return CreateComplexStep.SET_TYPE
 
-        elif self.all_fields_set():
-            return CreateComplexStep.ALL_SET
         else:
             raise RuntimeError("Illegal CreateComplex state")
 
