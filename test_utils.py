@@ -20,3 +20,6 @@ async def clear_all(user_id):
         user_id,
         message_ids=await __get_all_msgs(user_id)
     )
+
+async def generate_complexes_with_results():
+    pass
