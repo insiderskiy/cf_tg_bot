@@ -175,6 +175,7 @@ async def handle_next_step_set_complex_result(
         complex_id=None,
         event=None
 ):
+
     if user_id not in set_complex_result_cache:
         await __handle_set_result_init(user_id, complex_id, event)
     else:

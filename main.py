@@ -92,7 +92,7 @@ async def handle_start(event: NewMessage):
 async def handle_clear_all_callback(query):
     user = await query.get_sender()
     if await is_admin(user.id):
-        await clear_all(user.id)
+        await clear_all()
 
 
 @g.bot.on(CallbackQuery(pattern="/create_complex"))

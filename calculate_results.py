@@ -28,6 +28,7 @@ def get_results_by_complex(complex, results):
 
 
 def sort_results(results):
+    # TODO Учесть, что результат может быть одинаковым у нескольких человек
     return []
 
 
