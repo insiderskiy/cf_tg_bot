@@ -9,6 +9,7 @@ from set_complex_result import handle_next_step_set_complex_result
 from create_complex import handle_next_step_create_complex
 from session import get_interaction_in_progress, CurrentInteraction
 import globals as g
+from test_utils import clear_all
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -18,7 +19,7 @@ g.BOT_TOKEN = os.getenv("BOT_TOKEN")
 g.API_ID = os.getenv("API_ID")
 g.API_HASH = os.getenv("API_HASH")
 g.CHANNEL_WITH_COMPLEXES = os.getenv("CHANNEL_WITH_COMPLEXES")
-g.CHANNEL_WITH_COMPLEXES_ID = int(os.getenv("CHANNEL_WITH_COMPLEXES_ID"))
+g.CHAT_WITH_RESULTS_ID = int(os.getenv("CHAT_WITH_RESULTS_ID"))
 g.BOT_NAME = os.getenv("BOT_NAME")
 g.PHONE = os.getenv("PHONE")
 g.PASS = os.getenv("PASS")
@@ -85,6 +86,13 @@ async def handle_start(event: NewMessage):
         await handle_next_step_create_complex(user_id, event, None)
     elif current_interaction is CurrentInteraction.SET_COMPLEX_RESULT:
         await handle_next_step_set_complex_result(user_id, user_name, event = event)
+
+
+@g.bot.on(NewMessage(incoming=True, pattern='/clear_all'))
+async def handle_clear_all_callback(query):
+    user = await query.get_sender()
+    if await is_admin(user.id):
+        await clear_all(user.id)
 
 
 @g.bot.on(CallbackQuery(pattern="/create_complex"))

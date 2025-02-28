@@ -141,7 +141,7 @@ async def __remove_prev_result_if_set(user_id, msg_id):
     async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, reply_to=msg_id):
         if (f"id={user_id}" in reply.text
                 and isinstance(reply.peer_id, PeerChannel)
-                and reply.peer_id.channel_id == g.CHANNEL_WITH_COMPLEXES_ID):
+                and reply.peer_id.channel_id == g.CHAT_WITH_RESULTS_ID):
             await g.app.delete_messages(reply.chat.id, reply.id)
 
 
@@ -173,8 +173,8 @@ async def handle_next_step_set_complex_result(
         user_id,
         user_name,
         complex_id=None,
-        event=None,
-        query=None):
+        event=None
+):
     if user_id not in set_complex_result_cache:
         await __handle_set_result_init(user_id, complex_id, event)
     else:
