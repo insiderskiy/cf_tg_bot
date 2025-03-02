@@ -2,15 +2,50 @@
   {
     "complex_id": 1,
     "username": "Oll_ga",
+    "user_id": 318923691,
     "result": "100",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
     "username": "insiderskiy",
+    "user_id": 5521803029,
     "result": "120",
     "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "XxaMRuS",
+    "user_id": 173705485,
+    "result": "120",
+    "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "MitnikSany",
+    "user_id": 433019962,
+    "result": "80",
+    "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "diman4ic14",
+    "user_id": 433019962,
+    "result": "40",
+    "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "iEvgen_MH",
+    "user_id": 433019962,
+    "result": "65",
+    "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "r_yurchenko07",
+    "user_id": 728355132,
+    "result": "105",
+    "is_reps": "true"
   }
-
-
 ]

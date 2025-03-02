@@ -9,7 +9,7 @@ from set_complex_result import handle_next_step_set_complex_result
 from create_complex import handle_next_step_create_complex
 from session import get_interaction_in_progress, CurrentInteraction
 import globals as g
-from test_utils import clear_all
+from test_utils import clear_all, generate_complexes_with_results
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -93,6 +93,13 @@ async def handle_clear_all_callback(query):
     user = await query.get_sender()
     if await is_admin(user.id):
         await clear_all()
+
+
+@g.bot.on(NewMessage(incoming=True, pattern='/generate'))
+async def handle_generate_callback(query):
+    user = await query.get_sender()
+    if await is_admin(user.id):
+        await generate_complexes_with_results()
 
 
 @g.bot.on(CallbackQuery(pattern="/create_complex"))

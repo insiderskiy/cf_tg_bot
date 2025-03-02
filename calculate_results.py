@@ -1,6 +1,24 @@
+import json
+
+class Result:
+    complex_id: str
+    user_id: int
+    result: str
+    is_reps: bool
+    is_time: bool
 
 def get_complex_messages_for_current_quarter():
-    return []
+    results = []
+    with open('test_data/results.json') as f:
+        for result_json in json.load(f):
+            result = Result()
+            result.complex_id = result_json['complex_id']
+            result.user_id = result_json["user_id"]
+            result.result = result_json["result"]
+            result.is_reps = result_json["is_reps"]
+            result.is_time = result_json["is_time"]
+            results.append(result)
+    return results
 
 
 def map_complex_messages_to_complex_models(complex_messages):

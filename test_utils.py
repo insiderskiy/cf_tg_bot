@@ -1,3 +1,5 @@
+import json
+
 import globals as g
 
 
@@ -18,4 +20,22 @@ async def clear_all():
     )
 
 async def generate_complexes_with_results():
-    pass
+    with open("test_data/complexes.json") as f:
+        complexes = json.load(f)
+        for complex in complexes:
+            if complex.get('is_time', False):
+                t = "time"
+            else:
+                t = "reps"
+            await g.bot.send_message(
+                entity = g.CHANNEL_WITH_COMPLEXES,
+                message = f"ID: <b>{complex['id']}</b>\u00A0\n\n"
+                f"<b>{complex['name']}</b>\u00A0\n\n"
+                f"<a href='{complex['video_url']}'>Видео</a>\u00A0\n\n"
+                f"{complex['complex_rules']}\u00A0\n\n"
+                f"{t}\u00A0\n\n"
+                f"<a href='https://t.me/{g.BOT_NAME}?start=set_result_{complex['id']}'>"
+                f"Записать свой результат</a>\n",
+                parse_mode='html',
+                link_preview=True
+            )
