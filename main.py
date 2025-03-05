@@ -5,6 +5,8 @@ from furl import furl
 from telethon import TelegramClient, Button
 from telethon.events import NewMessage, Raw, CallbackQuery
 from telethon.tl.types import ChannelParticipantsAdmins
+
+from calculate_results import publish_results
 from set_complex_result import handle_next_step_set_complex_result
 from create_complex import handle_next_step_create_complex
 from session import get_interaction_in_progress, CurrentInteraction
@@ -100,6 +102,13 @@ async def handle_generate_callback(query):
     user = await query.get_sender()
     if await is_admin(user.id):
         await generate_complexes_with_results()
+
+
+@g.bot.on(NewMessage(incoming=True, pattern='/publish_results'))
+async def handle_generate_callback(query):
+    user = await query.get_sender()
+    if await is_admin(user.id):
+        await publish_results()
 
 
 @g.bot.on(CallbackQuery(pattern="/create_complex"))
