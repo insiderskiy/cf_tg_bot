@@ -68,7 +68,7 @@ async def __get_complex_messages(results):
 async def __post_results_by_complex_id(complex_id, complex_message, results):
     complex_results = filter(lambda r: int(r['complex_id']) == complex_id, results)
     for complex_result in complex_results:
-        text = (f"\n[{complex_result['username']}](tg://user?id={complex_result['user_id']})\n\n"
+        text = (f"\n[{complex_result['username']}](tg://user?id={complex_result['user_id']})\u00A0\n\n"
          f"Результат: {complex_result['result']}")
 
         await g.app.send_file(

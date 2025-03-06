@@ -1,6 +1,12 @@
+import collections
 import datetime
 import pytz
 import globals as g
+
+
+ComplexModel = collections.namedtuple("complex", ["complex_id",
+                                       "complex_name", "complex_video_url",
+                                       "complex_rules", "is_time", "is_reps", "msg"])
 
 
 def __get_quarter_bounds(date: datetime.datetime):
@@ -26,31 +32,52 @@ def __get_quarter_bounds(date: datetime.datetime):
     return start, end
 
 
-def __is_complex_msg(msg):
-    return True
+def __try_map_complex_msg(msg):
+    try:
+        parts = msg.text.split("\u00A0\n\n")
+        complex_id = parts[0].replace('ID: **', '').replace('**', '')
+        complex_name = parts[1].replace('**', '')
+        complex_video_url = parts[2].split('](')[1][:-1]
+        complex_rules = parts[3]
+        is_time = False
+        is_reps = False
+        if parts[4] == 'time':
+            is_time = True
+        else:
+            is_reps = True
+        return ComplexModel(complex_id, complex_name, complex_video_url, complex_rules, is_time, is_reps, msg)
+    except:
+        return None
 
 
-async def __get_complex_messages_for_current_quarter():
-    start, end = __get_quarter_bounds(datetime.datetime.now())
-    messages = []
+def __try_map_result_msg(msg):
+    try:
+        parts = msg.text.split("\u00A0\n\n")
+    except:
+        return None
+
+
+async def __get_complexes(start, end):
+    complexes = {}
     async for msg in g.app.iter_messages(
             g.CHANNEL_WITH_COMPLEXES,
             offset_date=start,
             reverse=True
     ):
-        if start <= msg.date <= end and __is_complex_msg(msg):
-            messages.append(msg)
+        if start <= msg.date <= end:
+            complex_model = __try_map_complex_msg(msg)
+            if complex_model is not None:
+                complexes[complex_model.complex_id] = complex_model
         if msg.date > end:
-            return messages
-    return messages
+            return complexes
+    return complexes
 
 
-def map_complex_messages_to_complex_models(complex_messages):
-    return []
-
-
-def get_result_messages_for_each_complex(complex_messages):
-    return []
+async def __get_results(complexes, start, end):
+    results = {}
+    for complex in complexes:
+        async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, reply_to=complex.msg.id):
+            pass
 
 
 def map_result_messages_to_result_models(result_messages):
@@ -102,12 +129,12 @@ def process_score(score, all_users):
 
 async def publish_results():
     score = {}
-    complex_messages = await __get_complex_messages_for_current_quarter()
-    complex_models = map_complex_messages_to_complex_models(complex_messages)
-    all_results_messages = get_result_messages_for_each_complex(complex_messages)
-    all_results_models = map_result_messages_to_result_models(all_results_messages)
+    start, end = __get_quarter_bounds(datetime.datetime.now())
+    all_complexes = await __get_complexes(start, end)
+    all_results = await __get_results(all_complexes, start, end)
+    all_results_models = map_result_messages_to_result_models(all_results)
     all_users = collect_users_with_results(all_results_models)
-    complex_models = sort_complexes(complex_models)
+    complex_models = sort_complexes(all_complexes)
     for idx, complex in enumerate(complex_models):
         process_single_complex(idx, complex, all_results_models, all_users, score)
     process_score(score, all_users)
