@@ -2,42 +2,42 @@
   {
     "complex_id": 1,
     "username": "insiderskiy",
-    "user_id": 5521803029,
     "result": "100",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
     "username": "XxaMRuS",
-    "user_id": 173705485,
     "result": "120",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
     "username": "zhekastetkhem",
-    "user_id": 722323918,
     "result": "80",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
     "username": "maxdukov",
-    "user_id": 381252457,
     "result": "40",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
     "username": "Dubrovskij25",
-    "user_id": 1871512202,
     "result": "65",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
     "username": "Debutsupport",
-    "user_id": 7122033820,
+    "result": "65",
+    "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "olga_buch",
     "result": "65",
     "is_reps": "true"
   }
