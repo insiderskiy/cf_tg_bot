@@ -147,8 +147,9 @@ async def __remove_prev_result_if_set(user_id, msg_id):
 
 async def __process_set_video(user_id, user_name, result_model, event):
     await __remove_prev_result_if_set(user_id, result_model.msg.id)
+    tg_username = (await g.bot.get_entity(user_id)).username
     video = await g.bot.download_media(event.message.video)
-    text = (f"\n[{user_name}](tg://user?id={user_id})\u00A0\n\n"
+    text = (f"\n[{user_name}](t.me/{tg_username})\u00A0\n\n"
             f"Результат: {result_model.result}")
     title = await __get_title()
     await g.app.send_file(

@@ -134,6 +134,7 @@ def process_score(score, all_users):
 
 async def publish_results():
     score = {}
+    u = await g.bot.get_entity("Debutsupport")
     start, end = __get_quarter_bounds(datetime.datetime.now())
     all_complexes = await __get_complexes(start, end)
     all_results = await __get_results(all_complexes, start, end)

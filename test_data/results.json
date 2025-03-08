@@ -15,13 +15,6 @@
   },
   {
     "complex_id": 1,
-    "username": "r_yurchenko07",
-    "user_id": 728355132,
-    "result": "120",
-    "is_reps": "true"
-  },
-  {
-    "complex_id": 1,
     "username": "zhekastetkhem",
     "user_id": 722323918,
     "result": "80",
@@ -38,6 +31,13 @@
     "complex_id": 1,
     "username": "Dubrovskij25",
     "user_id": 1871512202,
+    "result": "65",
+    "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "Debutsupport",
+    "user_id": 7122033820,
     "result": "65",
     "is_reps": "true"
   }
