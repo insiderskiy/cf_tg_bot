@@ -8,6 +8,8 @@ ComplexModel = collections.namedtuple("complex", ["complex_id",
                                        "complex_name", "complex_video_url",
                                        "complex_rules", "is_time", "is_reps", "msg"])
 
+ResultModel = collections.namedtuple("result", ["user_id", "result", "msg"])
+
 
 def __get_quarter_bounds(date: datetime.datetime):
     utc_date = pytz.utc.localize(date)
@@ -53,6 +55,9 @@ def __try_map_complex_msg(msg):
 def __try_map_result_msg(msg):
     try:
         parts = msg.text.split("\u00A0\n\n")
+        user_id = parts[0].split('user?id=')[1][:-1]
+        result = parts[1].split('Результат: ')[1]
+        return ResultModel(user_id, result, msg)
     except:
         return None
 
@@ -75,21 +80,21 @@ async def __get_complexes(start, end):
 
 async def __get_results(complexes, start, end):
     results = {}
-    for complex in complexes:
-        async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, reply_to=complex.msg.id):
-            pass
+    for complex_id in complexes:
+        async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES,
+                                               reply_to=complexes[complex_id].msg.id):
+            if start <= reply.date <= end:
+                result = __try_map_result_msg(reply)
+                if result is not None:
+                    if complex_id.complex_id in results:
+                        results[complex_id.complex_id].append(result)
+                    else:
+                        results[complex_id.complex_id] = [result]
+    return results
 
 
-def map_result_messages_to_result_models(result_messages):
-    return []
-
-
-def collect_users_with_results(results):
-    return []
-
-
-def sort_complexes(complexes):
-    return []
+def __sort_complexes(complexes):
+    return dict(sorted(complexes.items(), key = lambda item: item.msg.date))
 
 
 def get_results_by_complex(complex, results):
@@ -113,7 +118,7 @@ def get_user_by_id(user_id, all_users):
     return None
 
 
-def process_single_complex(complex_idx, complex, all_results_models, all_users, score):
+def __process_single_complex(complex_idx, complex, all_results_models, all_users, score):
     complex_results = get_results_by_complex(complex, all_results_models)
     complex_results = sort_results(complex_results)
     for idx, result_model in enumerate(complex_results):
@@ -132,9 +137,7 @@ async def publish_results():
     start, end = __get_quarter_bounds(datetime.datetime.now())
     all_complexes = await __get_complexes(start, end)
     all_results = await __get_results(all_complexes, start, end)
-    all_results_models = map_result_messages_to_result_models(all_results)
-    all_users = collect_users_with_results(all_results_models)
-    complex_models = sort_complexes(all_complexes)
-    for idx, complex in enumerate(complex_models):
-        process_single_complex(idx, complex, all_results_models, all_users, score)
-    process_score(score, all_users)
+    all_complexes = __sort_complexes(all_complexes)
+    for idx, complex in enumerate(all_complexes):
+        __process_single_complex(idx, complex, all_results, score)
+    # process_score(score, all_users)

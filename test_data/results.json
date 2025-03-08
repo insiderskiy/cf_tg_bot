@@ -1,16 +1,9 @@
 [
   {
     "complex_id": 1,
-    "username": "Oll_ga",
-    "user_id": 318923691,
-    "result": "100",
-    "is_reps": "true"
-  },
-  {
-    "complex_id": 1,
     "username": "insiderskiy",
     "user_id": 5521803029,
-    "result": "120",
+    "result": "100",
     "is_reps": "true"
   },
   {
@@ -22,37 +15,30 @@
   },
   {
     "complex_id": 1,
-    "username": "MitnikSany",
-    "user_id": 433019962,
+    "username": "r_yurchenko07",
+    "user_id": 728355132,
+    "result": "120",
+    "is_reps": "true"
+  },
+  {
+    "complex_id": 1,
+    "username": "zhekastetkhem",
+    "user_id": 722323918,
     "result": "80",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
-    "username": "diman4ic14",
-    "user_id": 433019962,
+    "username": "maxdukov",
+    "user_id": 381252457,
     "result": "40",
     "is_reps": "true"
   },
   {
     "complex_id": 1,
-    "username": "iEvgen_MH",
-    "user_id": 433019962,
+    "username": "Dubrovskij25",
+    "user_id": 1871512202,
     "result": "65",
-    "is_reps": "true"
-  },
-  {
-    "complex_id": 1,
-    "username": "r_yurchenko07",
-    "user_id": 728355132,
-    "result": "105",
-    "is_reps": "true"
-  },
-  {
-    "complex_id": 2,
-    "username": "Oll_ga",
-    "user_id": 318923691,
-    "result": "25",
     "is_reps": "true"
   }
 ]
