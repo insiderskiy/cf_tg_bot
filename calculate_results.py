@@ -1,14 +1,20 @@
 import collections
 import datetime
+from itertools import groupby
+
 import pytz
 import globals as g
 
-
 ComplexModel = collections.namedtuple("complex", ["complex_id",
-                                       "complex_name", "complex_video_url",
-                                       "complex_rules", "is_time", "is_reps", "msg"])
+                                                  "complex_name", "complex_video_url",
+                                                  "complex_rules", "is_time", "is_reps", "msg"])
 
-ResultModel = collections.namedtuple("result", ["user_id", "result", "msg"])
+ResultModel = collections.namedtuple("result", ["username", "result", "msg"])
+
+ScoreRecord = collections.namedtuple("score_record",
+                                     field_names=["complex_id", "username", "result", "points"])
+
+empty_record = '¯\_(ツ)_/¯'
 
 
 def __get_quarter_bounds(date: datetime.datetime):
@@ -29,7 +35,7 @@ def __get_quarter_bounds(date: datetime.datetime):
         start_month = 10
         end_month = 12
         end_day = 31
-    start = pytz.utc.localize(datetime.datetime(date.year, start_month,1))
+    start = pytz.utc.localize(datetime.datetime(date.year, start_month, 1))
     end = pytz.utc.localize(datetime.datetime(date.year, end_month, end_day))
     return start, end
 
@@ -55,9 +61,9 @@ def __try_map_complex_msg(msg):
 def __try_map_result_msg(msg):
     try:
         parts = msg.text.split("\u00A0\n\n")
-        user_id = parts[0].split('user?id=')[1][:-1]
+        username = parts[0].split('t.me/')[1][:-1]
         result = parts[1].split('Результат: ')[1]
-        return ResultModel(user_id, result, msg)
+        return ResultModel(username, result, msg)
     except:
         return None
 
@@ -75,70 +81,122 @@ async def __get_complexes(start, end):
                 complexes[complex_model.complex_id] = complex_model
         if msg.date > end:
             return complexes
-    return complexes
+    return dict(sorted(complexes.items(), key=lambda item: item[1].msg.date))
 
 
 async def __get_results(complexes, start, end):
     results = {}
     for complex_id in complexes:
-        async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES,
-                                               reply_to=complexes[complex_id].msg.id):
+        async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, reply_to=complexes[complex_id].msg.id):
             if start <= reply.date <= end:
                 result = __try_map_result_msg(reply)
                 if result is not None:
-                    if complex_id.complex_id in results:
-                        results[complex_id.complex_id].append(result)
+                    if complex_id in results:
+                        results[complex_id].append(result)
                     else:
-                        results[complex_id.complex_id] = [result]
+                        results[complex_id] = [result]
     return results
 
 
-def __sort_complexes(complexes):
-    return dict(sorted(complexes.items(), key = lambda item: item.msg.date))
+def __get_all_users(all_results):
+    users = set()
+    for complex_results in all_results.values():
+        for result in complex_results:
+            users.add(result.username)
+    return users
 
 
-def get_results_by_complex(complex, results):
-    return []
+def __to_seconds(result):
+    time_arr = result.split(':')
+    if len(time_arr) == 2:
+        hours = 0
+        minutes = time_arr[0]
+        seconds = time_arr[1]
+    elif len(time_arr) == 3:
+        hours = time_arr[0]
+        minutes = time_arr[1]
+        seconds = time_arr[2]
+    else:
+        return None
+    return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
 
 
-def sort_results(results):
-    # TODO Учесть, что результат может быть одинаковым у нескольких человек
-    return []
+def __fuck_python_group_by(result_models, key_lambda):
+    grouped_dict = {}
+    for m in result_models:
+        key = key_lambda(m.result)
+        if key_lambda(m.result) in grouped_dict:
+            grouped_dict[key].append(m)
+        else:
+            grouped_dict[key] = []
+            grouped_dict[key].append(m)
+    return grouped_dict
 
 
-def get_user_by_result(result_model, all_users):
-    return None
+def __process_single_complex(complex, all_results_models, all_users, score_list):
+    complex_id = complex[0]
+    complex_model: ComplexModel = complex[1]
+    if complex_id not in all_results_models:
+        return
+    complex_results = all_results_models[complex_id]
+    if complex_model.is_reps:
+        results_grouped = {int(k): list(v) for k, v in groupby(complex_results, key=lambda i: i.result)}
+        results_grouped_sorted = sorted(results_grouped.items(), reverse=True)
+    else:
+        results_grouped = __fuck_python_group_by(complex_results, lambda i: __to_seconds(i))
+        results_grouped_sorted = sorted(results_grouped.items())
+    points = 5
+    users_left = all_users.copy()
+    for result_group in results_grouped_sorted:
+        for result in result_group[1]:
+            score_list.append(ScoreRecord(complex_id, result.username, result.result, points))
+            if result.username in users_left:
+                users_left.remove(result.username)
+        points -= len(result_group[1])
+        if points <= 0:
+            points = 0
+    for username in users_left:
+        score_list.append(ScoreRecord(complex_id, username, empty_record, 0))
 
 
-def get_score_by_idx(idx):
-    return max(0, 5 - idx)
+def __group_scores_by_user(score_list):
+    score_dict = {}
+    for score_record in score_list:
+        if score_record.username in score_dict:
+            curr_item = score_dict[score_record.username]
+            new_points = curr_item[0] + score_record.points
+            curr_item[1].append(score_record)
+            score_dict[score_record.username] = (new_points, curr_item[1])
+        else:
+            score_dict[score_record.username] = (score_record.points, [score_record])
+    return dict(sorted(score_dict.items(), key=lambda i: i[1][0], reverse=True))
 
 
-def get_user_by_id(user_id, all_users):
-    return None
+async def __send_result_msg(scores_grouped_by_user, start, end):
+    result = ''
+    for idx, item in enumerate(scores_grouped_by_user.items()):
+        result += f"{idx + 1}. [{item[0]}](t.me/{item[0]}) – {item[1][0]} баллов"
+        if idx != len(scores_grouped_by_user) - 1:
+            result += "\n"
 
-
-def __process_single_complex(complex_idx, complex, all_results_models, all_users, score):
-    complex_results = get_results_by_complex(complex, all_results_models)
-    complex_results = sort_results(complex_results)
-    for idx, result_model in enumerate(complex_results):
-        user = get_user_by_result(result_model, all_users)
-        score[user.id] = score.get(user.id, 0) + get_score_by_idx(idx)
-
-
-def process_score(score, all_users):
-    for user_id, points in score.items():
-        user = get_user_by_id(user_id)
-        pass
+    await g.bot.send_message(
+        entity=g.CHANNEL_WITH_COMPLEXES,
+        message=f"**Турнирная таблица за период {start.strftime('%d.%m.%Y')}-{end.strftime('%d.%m.%Y')}**"
+                f"\n\n"
+                f"{result}",
+        parse_mode='markdown',
+        link_preview=False,
+    )
+    pass
 
 
 async def publish_results():
-    score = {}
-    u = await g.bot.get_entity("Debutsupport")
+    score_list = []
     start, end = __get_quarter_bounds(datetime.datetime.now())
     all_complexes = await __get_complexes(start, end)
     all_results = await __get_results(all_complexes, start, end)
-    all_complexes = __sort_complexes(all_complexes)
-    for idx, complex in enumerate(all_complexes):
-        __process_single_complex(idx, complex, all_results, score)
-    # process_score(score, all_users)
+    all_users = __get_all_users(all_results)
+    for complex in all_complexes.items():
+        __process_single_complex(complex, all_results, all_users, score_list)
+    scores_grouped_by_user = __group_scores_by_user(score_list)
+    await __send_result_msg(scores_grouped_by_user, start, end)

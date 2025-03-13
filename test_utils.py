@@ -24,7 +24,7 @@ async def clear_all():
 async def __post_complexes():
     with open("test_data/complexes.json") as f:
         complexes = json.load(f)
-        for complex in complexes[:3]:
+        for complex in complexes:
             if complex.get('is_time', False):
                 t = "time"
             else:
