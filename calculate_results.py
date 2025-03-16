@@ -1,9 +1,12 @@
 import collections
 import datetime
+import itertools
 from itertools import groupby
-
 import pytz
+from PIL import Image, ImageDraw, ImageFont
 import globals as g
+import numpy as np
+import matplotlib.pyplot as plt
 
 ComplexModel = collections.namedtuple("complex", ["complex_id",
                                                   "complex_name", "complex_video_url",
@@ -14,7 +17,7 @@ ResultModel = collections.namedtuple("result", ["username", "result", "msg"])
 ScoreRecord = collections.namedtuple("score_record",
                                      field_names=["complex_id", "username", "result", "points"])
 
-empty_record = '¯\_(ツ)_/¯'
+empty_result = '¯\_(ツ)_/¯'
 
 
 def __get_quarter_bounds(date: datetime.datetime):
@@ -156,7 +159,7 @@ def __process_single_complex(complex, all_results_models, all_users, score_list)
         if points <= 0:
             points = 0
     for username in users_left:
-        score_list.append(ScoreRecord(complex_id, username, empty_record, 0))
+        score_list.append(ScoreRecord(complex_id, username, empty_result, 0))
 
 
 def __group_scores_by_user(score_list):
@@ -171,6 +174,34 @@ def __group_scores_by_user(score_list):
             score_dict[score_record.username] = (score_record.points, [score_record])
     return dict(sorted(score_dict.items(), key=lambda i: i[1][0], reverse=True))
 
+
+async def __create_results_table(scores_grouped_by_user, all_complexes, start, end):
+    data = []
+    rows = []
+    columns = list(map(
+        lambda x: f'{all_complexes[x.complex_id].complex_name} ID {x.complex_id}',
+        scores_grouped_by_user[list(scores_grouped_by_user.keys())[0]][1]
+    ))
+    columns.append('Total')
+    for item in scores_grouped_by_user.items():
+        rows.append(item[0])
+        total_points = item[1][0]
+        records = item[1][1]
+        row = list(map(lambda x: f"{x.result} ({x.points})", records))
+        row.append(total_points)
+        data.append(row)
+
+    fig, axs = plt.subplots(1, 1)
+    axs.axis('tight')
+    axs.axis('off')
+    t = axs.table(
+        cellText=data,
+        rowLabels=rows,
+        colLabels=columns,
+        loc='center',
+    )
+    plt.title(label="1234", loc='left')
+    t.figure.savefig('table.png')
 
 async def __send_result_msg(scores_grouped_by_user, start, end):
     result = ''
@@ -190,13 +221,65 @@ async def __send_result_msg(scores_grouped_by_user, start, end):
     pass
 
 
+def __get_text_dimensions(text_string, font):
+
+    ascent, descent = font.getmetrics()
+    text_width = font.getmask(text_string).getbbox()[2]
+    text_height = font.getmask(text_string).getbbox()[3] + descent
+    return text_width, text_height
+
+
 async def publish_results():
-    score_list = []
-    start, end = __get_quarter_bounds(datetime.datetime.now())
-    all_complexes = await __get_complexes(start, end)
-    all_results = await __get_results(all_complexes, start, end)
-    all_users = __get_all_users(all_results)
-    for complex in all_complexes.items():
-        __process_single_complex(complex, all_results, all_users, score_list)
-    scores_grouped_by_user = __group_scores_by_user(score_list)
-    await __send_result_msg(scores_grouped_by_user, start, end)
+    # score_list = []
+    # start, end = __get_quarter_bounds(datetime.datetime.now())
+    # all_complexes = await __get_complexes(start, end)
+    # all_results = await __get_results(all_complexes, start, end)
+    # all_users = __get_all_users(all_results)
+    # for complex in all_complexes.items():
+    #     __process_single_complex(complex, all_results, all_users, score_list)
+    # scores_grouped_by_user = __group_scores_by_user(score_list)
+    # await __create_results_table(scores_grouped_by_user, all_complexes, start, end)
+    # await __send_result_msg(scores_grouped_by_user, start, end)
+
+    columns = ['column 1\nID 1', 'col 2\nID 2\nSome long long string 3', 'col 3\nID 3', 'col 4\nID 4']
+    rows = ['user 1', 'user 2', 'user 3']
+    data = [
+        ['1', '2', '424', '6'],
+        ['1', '2', '4', '6'],
+        ['1', '2', '4', '6'],
+    ]
+    title = 'title'
+
+    font = ImageFont.load_default()
+    measure_draw = ImageDraw.Draw(Image.new('RGBA', (0, 0)))
+    bbox = measure_draw.multiline_textbbox(xy = (0, 0), text=columns[0], font=font)
+    bbox2 = measure_draw.multiline_textbbox(xy = (0, 0), text=columns[1], font=font)
+
+    columns_sizes = list(map(lambda x: __get_text_dimensions(x, font), columns))
+    max_column_width = max(columns_sizes, key=lambda x: x[0])[0]
+    max_column_height = max(columns_sizes, key=lambda x: x[1])[1]
+
+    rows_sizes = list(map(lambda x: __get_text_dimensions(x, font), rows))
+    max_row_width = max(rows_sizes, key=lambda x: x[0])[0]
+    max_row_height = max(rows_sizes, key=lambda x: x[1])[1]
+
+    data_sizes = list(map(lambda x: __get_text_dimensions(x, font), list(itertools.chain.from_iterable(data))))
+    max_data_width = max(data_sizes, key=lambda x: x[0])[0]
+    max_data_height = max(data_sizes, key=lambda x: x[1])[1]
+    data_sizes = [data_sizes[i: i + len(columns)] for i in range(0, len(data_sizes), len(columns))]
+
+    p_s, p_t, p_e, p_b = 10, 10, 10, 10 # paddings start, top, end, bottom
+    image_width = max_row_width + max_column_width * len(columns) + p_s + p_e
+    image_height = max_column_height + max_row_height * len(data) + p_t + p_b
+
+    image = Image.new(mode='RGBA', size=(image_width, image_height), color='white')
+    draw = ImageDraw.Draw(image)
+
+    for idx, column in enumerate(columns):
+        x = p_s + max_row_width + idx * max_column_width
+        shape = [(x, p_t), (x + max_column_width, p_t + max_column_height)]
+        draw.rectangle(shape, fill='yellow')
+        draw.text(xy = (x, p_t), text=column, font=font, fill='black')
+    image.save('table.png', quality=100)
+
+    pass
