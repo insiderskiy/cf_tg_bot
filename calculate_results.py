@@ -4,6 +4,7 @@ import itertools
 from itertools import groupby
 import pytz
 from PIL import Image, ImageDraw, ImageFont
+
 import globals as g
 
 ComplexModel = collections.namedtuple("complex", ["complex_id",
@@ -203,7 +204,11 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
         ['1', '2', '4', '6'],
     ]
 
-    font = ImageFont.load_default(16)
+    font = ImageFont.load_default(size=16)
+
+    title = f"Турнирная таблица за период {start.strftime('%d.%m.%Y')}-{end.strftime('%d.%m.%Y')}"
+    title_bounds = measure_draw.multiline_textbbox(xy=(0, 0), text=str(title), font=font)
+    title_bounds = (title_bounds[2], title_bounds[3])
 
     columns_bounds = __get_text_bounds(font, columns)
     max_col_width, max_col_height = __get_max_width_height(columns_bounds)
@@ -227,7 +232,7 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
     img_padding = 10
 
     image_width = cell_width * (len(columns) + 1) + img_padding * 2
-    image_height = cell_height * (len(rows) + 1) + img_padding * 2
+    image_height = cell_height * (len(rows) + 1) + img_padding * 2 + (title_bounds[1] + img_padding * 2)
 
     image = Image.new(mode='RGBA', size=(image_width, image_height), color='white')
     draw = ImageDraw.Draw(image)
@@ -243,46 +248,54 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
         else:
             return '#FFFFFF'
 
+    # draw title
+    draw.text(
+        xy = ((image_width - title_bounds[0]) / 2, img_padding),
+        text=title,
+        font=font,
+        fill='black',
+        align='center'
+    )
 
-    # draw columns
-    for idx, column in enumerate(columns):
-        x = img_padding + cell_width + idx * cell_width
-        y = img_padding
-        shape = [
-            (x, y),
-            (x + cell_width, y + cell_height)
-        ]
-        draw.rectangle(shape, fill='white', outline='black', width=1)
-        text_x = x + ((cell_width - columns_bounds[idx][0]) / 2)
-        text_y = y + ((cell_height - columns_bounds[idx][1]) / 2)
-        draw.text(xy=(text_x, text_y), text=column, font=font, fill='black', align='center')
-
-    # draw rows
-    for idx, row in enumerate(rows):
-        x = img_padding
-        y = img_padding + cell_height + idx * cell_height
-        shape = [
-            (x, y),
-            (x + cell_width, y + cell_height)
-        ]
-        draw.rectangle(shape, outline='black', width=1, fill=color_by_idx(idx))
-        text_x = x + ((cell_width - rows_bounds[idx][0]) / 2)
-        text_y = y + ((cell_height - rows_bounds[idx][1]) / 2)
-        draw.text(xy=(text_x, text_y), text=row, font=font, fill='black', align='center')
-
-    # draw data
-    for row_idx, data_row in enumerate(data):
-        y = img_padding + cell_height + row_idx * cell_height
-        for col_idx, data_item in enumerate(data_row):
-            x = img_padding + cell_width + col_idx * cell_width
-            shape = [
-                (x, y),
-                (x + cell_width, y + cell_height)
-            ]
-            draw.rectangle(shape, outline='black', width=1, fill=color_by_idx(row_idx))
-            text_x = x + ((cell_width - data_bounds[row_idx][col_idx][0]) / 2)
-            text_y = y + ((cell_height - data_bounds[row_idx][col_idx][1]) / 2)
-            draw.text(xy=(text_x, text_y), text=str(data_item), font=font, fill='black', align='center')
+    # # draw columns
+    # for idx, column in enumerate(columns):
+    #     x = img_padding + cell_width + idx * cell_width
+    #     y = img_padding
+    #     shape = [
+    #         (x, y),
+    #         (x + cell_width, y + cell_height)
+    #     ]
+    #     draw.rectangle(shape, fill='white', outline='black', width=1)
+    #     text_x = x + ((cell_width - columns_bounds[idx][0]) / 2)
+    #     text_y = y + ((cell_height - columns_bounds[idx][1]) / 2)
+    #     draw.text(xy=(text_x, text_y), text=column, font=font, fill='black', align='center')
+    #
+    # # draw rows
+    # for idx, row in enumerate(rows):
+    #     x = img_padding
+    #     y = img_padding + cell_height + idx * cell_height
+    #     shape = [
+    #         (x, y),
+    #         (x + cell_width, y + cell_height)
+    #     ]
+    #     draw.rectangle(shape, outline='black', width=1, fill=color_by_idx(idx))
+    #     text_x = x + ((cell_width - rows_bounds[idx][0]) / 2)
+    #     text_y = y + ((cell_height - rows_bounds[idx][1]) / 2)
+    #     draw.text(xy=(text_x, text_y), text=row, font=font, fill='black', align='center')
+    #
+    # # draw data
+    # for row_idx, data_row in enumerate(data):
+    #     y = img_padding + cell_height + row_idx * cell_height
+    #     for col_idx, data_item in enumerate(data_row):
+    #         x = img_padding + cell_width + col_idx * cell_width
+    #         shape = [
+    #             (x, y),
+    #             (x + cell_width, y + cell_height)
+    #         ]
+    #         draw.rectangle(shape, outline='black', width=1, fill=color_by_idx(row_idx))
+    #         text_x = x + ((cell_width - data_bounds[row_idx][col_idx][0]) / 2)
+    #         text_y = y + ((cell_height - data_bounds[row_idx][col_idx][1]) / 2)
+    #         draw.text(xy=(text_x, text_y), text=str(data_item), font=font, fill='black', align='center')
 
     image.save('table.png', quality=100)
 
@@ -323,7 +336,7 @@ def __get_max_width_height(bounds):
 
 async def publish_results():
     # score_list = []
-    # start, end = __get_quarter_bounds(datetime.datetime.now())
+    start, end = __get_quarter_bounds(datetime.datetime.now())
     # all_complexes = await __get_complexes(start, end)
     # all_results = await __get_results(all_complexes, start, end)
     # all_users = __get_all_users(all_results)
@@ -332,4 +345,4 @@ async def publish_results():
     # scores_grouped_by_user = __group_scores_by_user(score_list)
     # await __create_results_table(scores_grouped_by_user, all_complexes, start, end)
     # await __send_result_msg(scores_grouped_by_user, start, end)
-    await __create_results_table(None, None, None, None)
+    await __create_results_table(None, None, start, end)
