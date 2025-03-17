@@ -19,6 +19,8 @@ ScoreRecord = collections.namedtuple("score_record",
 
 empty_result = '¯\_(ツ)_/¯'
 
+measure_draw = ImageDraw.Draw(Image.new('RGBA', (0, 0)))
+
 
 def __get_quarter_bounds(date: datetime.datetime):
     utc_date = pytz.utc.localize(date)
@@ -221,12 +223,21 @@ async def __send_result_msg(scores_grouped_by_user, start, end):
     pass
 
 
-def __get_text_dimensions(text_string, font):
+def __get_text_bounds(font, text_list, padding_hor, padding_vert):
+    bounds = list(map(lambda x: measure_draw.multiline_textbbox(xy=(0, 0), text=x, font=font), text_list))
+    bounds = list(map(lambda x: (x[2] + padding_hor * 2, x[3] + padding_vert * 2), bounds))
+    return bounds
 
-    ascent, descent = font.getmetrics()
-    text_width = font.getmask(text_string).getbbox()[2]
-    text_height = font.getmask(text_string).getbbox()[3] + descent
-    return text_width, text_height
+
+def __get_max_width_height(bounds):
+    max_width = 0
+    max_height = 0
+    for b in bounds:
+        if b[0] > max_width:
+            max_width = b[0]
+        if b[1] > max_height:
+            max_height = b[1]
+    return max_width, max_height
 
 
 async def publish_results():
@@ -250,36 +261,40 @@ async def publish_results():
     ]
     title = 'title'
 
-    font = ImageFont.load_default()
-    measure_draw = ImageDraw.Draw(Image.new('RGBA', (0, 0)))
-    bbox = measure_draw.multiline_textbbox(xy = (0, 0), text=columns[0], font=font)
-    bbox2 = measure_draw.multiline_textbbox(xy = (0, 0), text=columns[1], font=font)
+    font = ImageFont.load_default(16)
 
-    columns_sizes = list(map(lambda x: __get_text_dimensions(x, font), columns))
-    max_column_width = max(columns_sizes, key=lambda x: x[0])[0]
-    max_column_height = max(columns_sizes, key=lambda x: x[1])[1]
+    columns_bounds = __get_text_bounds(font, columns, 4, 2)
+    max_col_width, max_col_height = __get_max_width_height(columns_bounds)
 
-    rows_sizes = list(map(lambda x: __get_text_dimensions(x, font), rows))
-    max_row_width = max(rows_sizes, key=lambda x: x[0])[0]
-    max_row_height = max(rows_sizes, key=lambda x: x[1])[1]
+    rows_bounds = __get_text_bounds(font, rows, 0, 0)
+    max_row_width, max_row_height = __get_max_width_height(rows_bounds)
 
-    data_sizes = list(map(lambda x: __get_text_dimensions(x, font), list(itertools.chain.from_iterable(data))))
-    max_data_width = max(data_sizes, key=lambda x: x[0])[0]
-    max_data_height = max(data_sizes, key=lambda x: x[1])[1]
-    data_sizes = [data_sizes[i: i + len(columns)] for i in range(0, len(data_sizes), len(columns))]
+    data_1d = list(itertools.chain.from_iterable(data))
+    data_bounds = __get_text_bounds(font, data_1d, 0, 0)
+    max_data_width, max_data_height = __get_max_width_height(data_bounds)
+    data_bounds = [data_bounds[i: i + len(columns)] for i in range(0, len(data_bounds), len(columns))]
 
     p_s, p_t, p_e, p_b = 10, 10, 10, 10 # paddings start, top, end, bottom
-    image_width = max_row_width + max_column_width * len(columns) + p_s + p_e
-    image_height = max_column_height + max_row_height * len(data) + p_t + p_b
+    image_width = max_row_width + max_col_width * len(columns) + p_s + p_e
+    image_height = max_col_height + max_row_height * len(data) + p_t + p_b
 
     image = Image.new(mode='RGBA', size=(image_width, image_height), color='white')
     draw = ImageDraw.Draw(image)
 
     for idx, column in enumerate(columns):
-        x = p_s + max_row_width + idx * max_column_width
-        shape = [(x, p_t), (x + max_column_width, p_t + max_column_height)]
-        draw.rectangle(shape, fill='yellow')
-        draw.text(xy = (x, p_t), text=column, font=font, fill='black')
+        x = p_s + max_row_width + idx * max_col_width
+        shape = [(x, p_t), (x + max_col_width, p_t + max_col_height)]
+        draw.rectangle(shape, outline='black', width=1)
+        text_x = x + ((max_col_width - columns_bounds[idx][0]) / 2)
+        text_y = p_s + ((max_col_height - columns_bounds[idx][1]) / 2)
+        draw.text(xy = (text_x, text_y), text=column, font=font, fill='black')
+
+    for idx, row in enumerate(rows):
+        y = p_t + max_col_height + idx * max_row_height
+        shape = [(p_s, y), (p_s + max_row_width, y + max_row_height)]
+        draw.rectangle(shape, fill='green')
+        draw.text(xy = (p_s, y), text=row, font=font, fill='black')
+
     image.save('table.png', quality=100)
 
     pass
