@@ -1,6 +1,7 @@
 import collections
 import datetime
 import itertools
+import os
 from itertools import groupby
 import pytz
 from PIL import Image, ImageDraw, ImageFont
@@ -177,32 +178,21 @@ def __group_scores_by_user(score_list):
 
 
 async def __create_results_table(scores_grouped_by_user, all_complexes, start, end):
-    # data = []
-    # rows = []
-    # columns = list(map(
-    #     lambda x: f'{all_complexes[x.complex_id].complex_name}\nID {x.complex_id}',
-    #     scores_grouped_by_user[list(scores_grouped_by_user.keys())[0]][1]
-    # ))
-    # columns.append('Total')
-    #
-    # for item in scores_grouped_by_user.items():
-    #     rows.append(item[0])
-    #     total_points = item[1][0]
-    #     records = item[1][1]
-    #     row = list(map(lambda x: f"{x.result} ({x.points})", records))
-    #     row.append(total_points)
-    #     data.append(row)
+    data = []
+    rows = []
+    columns = list(map(
+        lambda x: f'{all_complexes[x.complex_id].complex_name}\nID {x.complex_id}',
+        scores_grouped_by_user[list(scores_grouped_by_user.keys())[0]][1]
+    ))
+    columns.append('Total')
 
-    columns = ['column 1\nID 1', 'col 2\nID 2\nSome long long string 3', 'col 3\nID 3', 'col 4\nID 4']
-    rows = ['user 1', 'user 2', 'user 3', 'user 4', 'user 5', 'user 6']
-    data = [
-        ['1', '2', '424', '6'],
-        ['1', '2', '4', '6'],
-        ['1', '2', '4', '6'],
-        ['1', '2', '4', '6'],
-        ['1', '2', '4', '6'],
-        ['1', '2', '4', '6'],
-    ]
+    for item in scores_grouped_by_user.items():
+        rows.append(item[0])
+        total_points = item[1][0]
+        records = item[1][1]
+        row = list(map(lambda x: f"{x.result} ({x.points})", records))
+        row.append(total_points)
+        data.append(row)
 
     font = ImageFont.truetype(font='Roboto-Regular.ttf', size=16)
 
@@ -298,6 +288,11 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
     )
 
     image.save('table.png', quality=100)
+    await g.bot.send_file(
+        g.CHANNEL_WITH_COMPLEXES,
+        'table.png'
+    )
+    os.remove('table.png')
 
 
 async def __send_result_msg(scores_grouped_by_user, start, end):
@@ -336,14 +331,14 @@ def __get_max_width_height(bounds):
 
 
 async def publish_results():
-    # score_list = []
+    score_list = []
     start, end = __get_quarter_bounds(datetime.datetime.now())
-    # all_complexes = await __get_complexes(start, end)
-    # all_results = await __get_results(all_complexes, start, end)
-    # all_users = __get_all_users(all_results)
-    # for complex in all_complexes.items():
-    #     __process_single_complex(complex, all_results, all_users, score_list)
-    # scores_grouped_by_user = __group_scores_by_user(score_list)
-    # await __create_results_table(scores_grouped_by_user, all_complexes, start, end)
-    # await __send_result_msg(scores_grouped_by_user, start, end)
-    await __create_results_table(None, None, start, end)
+    all_complexes = await __get_complexes(start, end)
+    all_results = await __get_results(all_complexes, start, end)
+    all_users = __get_all_users(all_results)
+    for complex in all_complexes.items():
+        __process_single_complex(complex, all_results, all_users, score_list)
+    scores_grouped_by_user = __group_scores_by_user(score_list)
+    await __create_results_table(scores_grouped_by_user, all_complexes, start, end)
+    await __send_result_msg(scores_grouped_by_user, start, end)
+
