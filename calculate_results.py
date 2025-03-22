@@ -179,6 +179,8 @@ def __group_scores_by_user(score_list):
     return dict(sorted(score_dict.items(), key=lambda i: i[1][0], reverse=True))
 
 
+# TODO: Исправить проблему с шириной таблицы. Если текст заголовка шире, чем ячейки таблицы.
+#   Проверить можно для случая, когда есть только один комплекс
 async def __create_results_table(scores_grouped_by_user, all_complexes, start, end):
     data = []
     rows = []
