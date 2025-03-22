@@ -63,6 +63,8 @@ def __try_map_complex_msg(msg):
         return None
 
 
+# TODO Исправить для пользователя без tg username, для него формат ссылки другой. Ещё есть вариант, что
+#   это будет обязательным условием
 def __try_map_result_msg(msg):
     try:
         parts = msg.text.split("\u00A0\n\n")
