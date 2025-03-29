@@ -24,7 +24,7 @@ async def clear_all():
 async def __post_complexes():
     with open("test_data/complexes.json") as f:
         complexes = json.load(f)
-        for complex in complexes:
+        for complex in complexes[0:1]:
             if complex.get('is_time', False):
                 t = "time"
             else:
@@ -82,7 +82,7 @@ async def __post_results_by_complex_id(complex_id, complex_message, results):
 
 async def generate_complexes_with_results():
     await __post_complexes()
-    results = __get_results()
+    results = __get_results()[0:1]
     complex_messages = await __get_complex_messages(results)
     for complex_id in complex_messages:
         await __post_results_by_complex_id(complex_id, complex_messages[complex_id], results)

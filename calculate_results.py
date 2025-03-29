@@ -63,8 +63,6 @@ def __try_map_complex_msg(msg):
         return None
 
 
-# TODO Исправить для пользователя без tg username, для него формат ссылки другой. Ещё есть вариант, что
-#   это будет обязательным условием
 def __try_map_result_msg(msg):
     try:
         parts = msg.text.split("\u00A0\n\n")
@@ -226,7 +224,7 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
     img_padding = 10
     title_padding = 20
 
-    image_width = cell_width * (len(columns) + 1) + img_padding * 2
+    image_width = max(cell_width * (len(columns) + 1), title_bounds[0]) + img_padding * 2
     image_height = cell_height * (len(rows) + 1) + img_padding * 2 + (title_bounds[1] + title_padding)
 
     image = Image.new(mode='RGBA', size=(image_width, image_height), color='white')
