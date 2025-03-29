@@ -5,6 +5,8 @@ import os
 from itertools import groupby
 import pytz
 from PIL import Image, ImageDraw, ImageFont
+from dateutil.relativedelta import relativedelta
+from telethon import Button
 
 import globals as g
 
@@ -22,8 +24,8 @@ empty_result = '¯\_(ツ)_/¯'
 measure_draw = ImageDraw.Draw(Image.new('RGBA', (0, 0)))
 
 
-def __get_quarter_bounds(date: datetime.datetime):
-    utc_date = pytz.utc.localize(date)
+def __get_quarter_bounds(dt: datetime.datetime):
+    utc_date = pytz.utc.localize(dt)
     if utc_date.month <= 3:
         start_month = 1
         end_month = 3
@@ -40,8 +42,28 @@ def __get_quarter_bounds(date: datetime.datetime):
         start_month = 10
         end_month = 12
         end_day = 31
-    start = pytz.utc.localize(datetime.datetime(date.year, start_month, 1))
-    end = pytz.utc.localize(datetime.datetime(date.year, end_month, end_day))
+    start = pytz.utc.localize(datetime.datetime(dt.year, start_month, 1))
+    end = pytz.utc.localize(datetime.datetime(dt.year, end_month, end_day) + datetime.timedelta(days=1, microseconds=-1))
+    return start, end
+
+
+def __get_week_bounds(dt):
+    utc_date = pytz.utc.localize(dt)
+    start = pytz.utc.localize(dt - datetime.timedelta(
+        days=dt.weekday(),
+        hours=utc_date.hour,
+        minutes=utc_date.minute,
+        seconds=utc_date.second,
+        microseconds=utc_date.microsecond
+    ))
+    end = start + datetime.timedelta(days=7, microseconds=-1)
+    return start, end
+
+
+def __get_month_bounds(dt):
+    utc_date = pytz.utc.localize(dt)
+    start = pytz.utc.localize(datetime.datetime(year=utc_date.year, month=utc_date.month, day=1))
+    end = start + relativedelta(day=31) + datetime.timedelta(days=1, microseconds=-1)
     return start, end
 
 
@@ -330,9 +352,55 @@ def __get_max_width_height(bounds):
     return max_width, max_height
 
 
-async def publish_results():
+async def publish_results(user_id):
+    await g.bot.send_message(
+        user_id,
+        'Выберите период',
+        buttons=[
+            Button.inline(
+                "PW",
+                '/gnr_prev_week'
+            ),
+            Button.inline(
+                "CW",
+                '/gnr_curr_week'
+            ),
+            Button.inline(
+                "PM",
+                '/gnr_prev_month'
+            ),
+            Button.inline(
+                "CM",
+                '/gnr_curr_month'
+            ),
+            Button.inline(
+                "PQ",
+                '/gnr_prev_quarter'
+            ),
+            Button.inline(
+                "CQ",
+                '/gnr_curr_quarter'
+            ),
+        ]
+    )
+
+
+async def generate_results(query):
     score_list = []
-    start, end = __get_quarter_bounds(datetime.datetime.now())
+    date_mark = query.data.decode('utf-8')
+    now = datetime.datetime.now()
+    if 'prev_week' in date_mark:
+        start, end = __get_week_bounds(now - datetime.timedelta(days=7))
+    elif 'curr_week' in date_mark:
+        start, end = __get_week_bounds(now)
+    elif 'prev_month' in date_mark:
+        start, end = __get_month_bounds(now - relativedelta(month=1))
+    elif 'curr_month' in date_mark:
+        start, end = __get_month_bounds(now)
+    elif 'prev_quarter' in date_mark:
+        start, end = __get_quarter_bounds(now - relativedelta(month=3))
+    else:
+        start, end = __get_quarter_bounds(now)
     all_complexes = await __get_complexes(start, end)
     all_results = await __get_results(all_complexes, start, end)
     all_users = __get_all_users(all_results)
@@ -341,4 +409,3 @@ async def publish_results():
     scores_grouped_by_user = __group_scores_by_user(score_list)
     await __create_results_table(scores_grouped_by_user, all_complexes, start, end)
     await __send_result_msg(scores_grouped_by_user, start, end)
-
