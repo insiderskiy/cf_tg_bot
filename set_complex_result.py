@@ -101,7 +101,8 @@ async def __handle_set_result_init(user_id, complex_id, event):
 async def __send_incorrect_result(user_id):
     await g.bot.send_message(
         user_id,
-        "Неверный формат. Повторите ввод"
+        "Неверный формат. Повторите ввод",
+        buttons=Button.inline("Отменить ввод результата", '/cancel')
     )
 
 
@@ -153,6 +154,13 @@ async def __process_set_video(user_id, user_name, result_model, event):
     else:
         link = f"\n[{user_name}](t.me/{tg_username})\u00A0\n\n"
     video = await g.bot.download_media(event.message.video)
+    if video is None:
+        await g.bot.send_message(
+            user_id,
+            'Не удалось загрузить видео',
+            buttons=Button.inline('Отменить добавление результата', '/cancel')
+        )
+        return
     text = (f"{link}"
             f"Результат: {result_model.result}")
     title = await __get_title()
@@ -180,7 +188,6 @@ async def handle_next_step_set_complex_result(
         complex_id=None,
         event=None
 ):
-
     if user_id not in set_complex_result_cache:
         await __handle_set_result_init(user_id, complex_id, event)
     else:

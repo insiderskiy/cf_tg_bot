@@ -9,7 +9,7 @@ from telethon.tl.types import ChannelParticipantsAdmins
 from calculate_results import publish_results
 from set_complex_result import handle_next_step_set_complex_result
 from create_complex import handle_next_step_create_complex
-from session import get_interaction_in_progress, CurrentInteraction
+from session import get_interaction_in_progress, CurrentInteraction, create_complex_cache, set_complex_result_cache
 import globals as g
 from test_utils import clear_all, generate_complexes_with_results
 
@@ -123,6 +123,16 @@ async def handle_set_complex_result_type_callback(query):
     await handle_next_step_create_complex(user_id, None, query)
 
 
+@g.bot.on(CallbackQuery(pattern="/cancel"))
+async def handle_cancel_callback(query):
+    user_id = (await query.get_sender()).id
+    if user_id in create_complex_cache:
+        del create_complex_cache[user_id]
+    elif user_id in set_complex_result_cache:
+        del set_complex_result_cache[user_id]
+    await g.bot.send_message(user_id, 'Отменено')
+
+
 @g.bot.on(NewMessage(incoming=True))
 async def handle_message(event: NewMessage):
     user = (await event.get_sender())
@@ -131,8 +141,10 @@ async def handle_message(event: NewMessage):
         # TODO show help
         pass
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
+        # TODO Добавить возможность выйти из текущего состояния
         await handle_next_step_create_complex(user.id, event, None)
     elif current_interaction is CurrentInteraction.SET_COMPLEX_RESULT:
+        # TODO Добавить возможность выйти из текущего состояния
         await handle_next_step_set_complex_result(user.id, user.first_name, event = event)
     else:
         # TODO show help
