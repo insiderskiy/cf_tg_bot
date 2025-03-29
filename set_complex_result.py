@@ -134,7 +134,6 @@ async def __process_set_time_or_reps(user_id, result_model, event):
 
 
 async def __get_title():
-    # TODO Мотивирующий заголовок, что-то вроде мастер спорта по всем видам спорта
     return 'Поздравляем, чемпион! '
 
 

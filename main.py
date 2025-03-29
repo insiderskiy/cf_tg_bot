@@ -138,16 +138,12 @@ async def handle_message(event: NewMessage):
     user = (await event.get_sender())
     current_interaction = get_interaction_in_progress(user.id)
     if current_interaction is CurrentInteraction.NONE:
-        # TODO show help
         pass
     elif current_interaction is CurrentInteraction.COMPLEX_CREATION:
-        # TODO Добавить возможность выйти из текущего состояния
         await handle_next_step_create_complex(user.id, event, None)
     elif current_interaction is CurrentInteraction.SET_COMPLEX_RESULT:
-        # TODO Добавить возможность выйти из текущего состояния
         await handle_next_step_set_complex_result(user.id, user.first_name, event = event)
     else:
-        # TODO show help
         pass
 
 
