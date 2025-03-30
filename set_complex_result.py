@@ -109,7 +109,7 @@ async def __send_incorrect_result(user_id):
 async def __send_set_video(user_id):
     await g.bot.send_message(
         user_id,
-        "Введите ссылку на видео выполнения комплекса либо отправьте видео"
+        "Отправьте видео выполнения комплекса"
     )
 
 
@@ -146,6 +146,7 @@ async def __remove_prev_result_if_set(user_id, msg_id):
 
 
 async def __process_set_video(user_id, user_name, result_model, event):
+    await g.bot.send_message(user_id, 'Обработка видео займёт некоторое время')
     await __remove_prev_result_if_set(user_id, result_model.msg.id)
     tg_username = (await g.bot.get_entity(user_id)).username
     if tg_username is None:

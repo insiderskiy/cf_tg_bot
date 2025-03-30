@@ -74,7 +74,8 @@ class CreateComplexModel:
 # region private
 # region fields validation
 async def __is_complex_id_unique(complex_id) -> bool:
-    # TODO parse channel messages and check uniqueness
+    async for msg in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, search=f'start=set_result_{complex_id}'):
+        return False
     return True
 
 
@@ -87,7 +88,11 @@ async def __validate_complex_id(user_id, complex_id) -> bool:
         )
         return False
     if not await __is_complex_id_unique(complex_id):
-        await g.bot.send_message(user_id, "ID комплекса должен быть уникальным")
+        await g.bot.send_message(
+            user_id,
+            "ID комплекса должен быть уникальным. Введите уникальный ID",
+            buttons=Button.force_reply()
+        )
         return False
     return True
 
