@@ -135,7 +135,7 @@ async def __handle_set_id(create_complex_model, user_id, event):
 
 
 async def __handle_set_name(create_complex_model, user_id, event):
-    complex_name = event.message.text[:30]
+    complex_name = event.message.text[:100]
     create_complex_model.complex_name = complex_name
     await g.bot.send_message(
         user_id,
