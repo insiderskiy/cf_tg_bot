@@ -6,6 +6,7 @@ from telethon import Button
 from session import create_complex_cache
 import validators
 import globals as g
+from set_complex_result import parse_complex_from_msg
 
 
 # region data
@@ -73,9 +74,11 @@ class CreateComplexModel:
 
 # region private
 # region fields validation
-async def __is_complex_id_unique(complex_id) -> bool:
+async def ç(complex_id) -> bool:
     async for msg in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, search=f'start=set_result_{complex_id}'):
-        return False
+        complex_model = parse_complex_from_msg(msg)
+        if complex_model is not None and complex_model.complex_id == complex_id:
+            return False
     return True
 
 

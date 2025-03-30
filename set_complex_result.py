@@ -47,7 +47,7 @@ class ComplexModel:
 
 
 # region private
-def __parse_complex_from_msg(msg):
+def parse_complex_from_msg(msg):
     try:
         parts = msg.text.split("\u00A0\n\n")
         model = ComplexModel()
@@ -67,7 +67,7 @@ def __parse_complex_from_msg(msg):
 
 async def __create_result_model(user_id, complex_id):
     async for msg in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES):
-        complex_model = __parse_complex_from_msg(msg)
+        complex_model = parse_complex_from_msg(msg)
         if complex_model is not None and complex_model.complex_id == complex_id:
             set_result_model = SetResultModel()
             set_result_model.session_id = str(uuid.uuid4())[:8]
