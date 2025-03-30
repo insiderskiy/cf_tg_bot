@@ -185,7 +185,7 @@ def __process_single_complex(complex, all_results_models, all_users, score_list)
     for username in users_left:
         score_list.append(ScoreRecord(complex_id, username, empty_result, 0))
 
-
+# TODO Проверить наличие дублей, убирать предыдущие результаты, если есть более новые
 def __group_scores_by_user(score_list):
     score_dict = {}
     for score_record in score_list:

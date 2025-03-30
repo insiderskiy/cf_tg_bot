@@ -150,6 +150,9 @@ async def __cancel_internal(user_id):
     await g.bot.send_message(user_id, 'Отменено')
 
 
+# TODO Добавить возможность редактировать результат
+
+
 @g.bot.on(NewMessage(incoming=True))
 async def handle_message(event: NewMessage):
     user = (await event.get_sender())

@@ -137,6 +137,7 @@ async def __get_title():
     return 'Поздравляем, чемпион! '
 
 
+# TODO Не сработало какого-то хера
 async def __remove_prev_result_if_set(user_id, msg_id):
     async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, reply_to=msg_id):
         if (f"id={user_id}" in reply.text
