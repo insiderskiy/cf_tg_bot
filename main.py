@@ -130,9 +130,19 @@ async def handle_set_complex_result_type_callback(query):
     await handle_next_step_create_complex(user_id, None, query)
 
 
+@g.bot.on(NewMessage(incoming=True, pattern="/cancel"))
+async def handle_cancel_msg(msg):
+    user_id = (await msg.get_sender()).id
+    await __cancel_internal(user_id)
+
+
 @g.bot.on(CallbackQuery(pattern="/cancel"))
 async def handle_cancel_callback(query):
     user_id = (await query.get_sender()).id
+    await __cancel_internal(user_id)
+
+
+async def __cancel_internal(user_id):
     if user_id in create_complex_cache:
         del create_complex_cache[user_id]
     elif user_id in set_complex_result_cache:

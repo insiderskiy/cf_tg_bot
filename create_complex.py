@@ -189,6 +189,10 @@ async def __handle_set_rules(create_complex_model, user_id, event):
             Button.inline(
                 text="Повторения",
                 data=__get_reps_data(create_complex_model)
+            ),
+            Button.inline(
+                text='Отменить создание комплекса',
+                data='/cancel'
             )
         ]
     )
