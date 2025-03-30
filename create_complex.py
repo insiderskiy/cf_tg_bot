@@ -74,7 +74,7 @@ class CreateComplexModel:
 
 # region private
 # region fields validation
-async def ç(complex_id) -> bool:
+async def __is_complex_id_unique(complex_id) -> bool:
     async for msg in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, search=f'start=set_result_{complex_id}'):
         complex_model = parse_complex_from_msg(msg)
         if complex_model is not None and complex_model.complex_id == complex_id:
