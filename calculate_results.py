@@ -119,7 +119,12 @@ async def __get_results(complexes, start, end):
                 result = __try_map_result_msg(reply)
                 if result is not None:
                     if complex_id in results:
-                        results[complex_id].append(result)
+                        prev_result = next(filter(lambda x: x.username == result.username, results[complex_id]), None)
+                        if prev_result is None:
+                            results[complex_id].append(result)
+                        elif prev_result.msg.date < result.msg.date:
+                            results[complex_id].remove(prev_result)
+                            results[complex_id].append(result)
                     else:
                         results[complex_id] = [result]
     return results
