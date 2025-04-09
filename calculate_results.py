@@ -221,7 +221,8 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
         row.append(total_points)
         data.append(row)
 
-    font = ImageFont.truetype(font='Roboto-Regular.ttf', size=16)
+    # font = ImageFont.truetype(font='Roboto-Regular.ttf', size=16)
+    font = ImageFont.truetype(font='NotoSansJP-Regular.ttf', size=16)
 
     title = f"Турнирная таблица за период {start.strftime('%d.%m.%Y')}-{end.strftime('%d.%m.%Y')}"
     title_bounds = measure_draw.multiline_textbbox(xy=(0, 0), text=str(title), font=font)
