@@ -115,7 +115,7 @@ async def __get_results(complexes, start, end):
     results = {}
     for complex_id in complexes:
         async for reply in g.app.iter_messages(g.CHANNEL_WITH_COMPLEXES, reply_to=complexes[complex_id].msg.id):
-            if start <= reply.date <= end:
+            if start <= reply.date <= end + relativedelta(days=7):
                 result = __try_map_result_msg(reply)
                 if result is not None:
                     if complex_id in results:
