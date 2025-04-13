@@ -323,10 +323,23 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
     os.remove('table.png')
 
 
+def __get_ending_by_last_number(num):
+    number_str = str(num)
+    last_digit_str = number_str[len(number_str) - 1]
+    number = int(last_digit_str)
+    if number == 1:
+        return "балл"
+    elif 1 < number < 5:
+        return "балла"
+    else:
+        return "баллов"
+
+
 async def __send_result_msg(scores_grouped_by_user, start, end):
     result = ''
     for idx, item in enumerate(scores_grouped_by_user.items()):
-        result += f"{idx + 1}. [{item[0]}](t.me/{item[0]}) – {item[1][0]} баллов"
+        result += (f"{idx + 1}. [{item[0]}](t.me/{item[0]}) – "
+                   f"{item[1][0]} {__get_ending_by_last_number(item[1][0])}")
         if idx != len(scores_grouped_by_user) - 1:
             result += "\n"
 
