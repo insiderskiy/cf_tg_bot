@@ -4,7 +4,7 @@ import uuid
 from enum import Enum
 from telethon import Button
 from telethon.tl.types import PeerChannel
-
+import validators
 import globals as g
 from session import set_complex_result_cache
 
@@ -148,38 +148,53 @@ async def __remove_prev_result_if_set(user_id, msg_id):
 
 async def __process_set_video(user_id, user_name, result_model, event):
     await g.bot.send_message(user_id, 'Обработка видео займёт некоторое время')
-    await __remove_prev_result_if_set(user_id, result_model.msg.id)
+    # Закомментил удаление предыдущего результата. При подсчёте баллов просто берём последний результат
+    # await __remove_prev_result_if_set(user_id, result_model.msg.id)
     tg_username = (await g.bot.get_entity(user_id)).username
     if tg_username is None:
         link = f"\n[{user_name}](tg:user?id={user_id})\u00A0\n\n"
     else:
         link = f"\n[{user_name}](t.me/{tg_username})\u00A0\n\n"
-    video = await g.bot.download_media(event.message.video)
-    if video is None:
+    if event.message.video is not None:
+        video = await g.bot.download_media(event.message.video)
+        text = (f"{link}"
+                f"Результат: {result_model.result}")
+        title = await __get_title()
+        await g.app.send_file(
+            entity=g.CHANNEL_WITH_COMPLEXES,
+            file=video,
+            caption=text,
+            parse_mode='markdown',
+            comment_to=result_model.msg.id
+        )
         await g.bot.send_message(
             user_id,
-            'Не удалось загрузить видео',
+            f'{title}Результат отправлен'
+        )
+        os.remove(video)
+        del set_complex_result_cache[user_id]
+    elif validators.url(event.message.text):
+        title = await __get_title()
+        text = (f"{link}"
+                f"Результат: {result_model.result}\u00A0\n\n"
+                f"Ссылка на видео с выполнением: {event.message.text}")
+        await g.app.send_message(
+            entity=g.CHANNEL_WITH_COMPLEXES,
+            message=text,
+            parse_mode='markdown',
+            comment_to=result_model.msg.id
+        )
+        await g.bot.send_message(
+            user_id,
+            f'{title}Результат отправлен'
+        )
+        del set_complex_result_cache[user_id]
+    else:
+        await g.bot.send_message(
+            user_id,
+            'Не удалось найти видео. Загрузите как файл или добавьте корректную ссылку',
             buttons=Button.inline('Отменить добавление результата', '/cancel')
         )
-        return
-    text = (f"{link}"
-            f"Результат: {result_model.result}")
-    title = await __get_title()
-    await g.app.send_file(
-        entity=g.CHANNEL_WITH_COMPLEXES,
-        file=video,
-        caption=text,
-        parse_mode='markdown',
-        comment_to=result_model.msg.id
-    )
-    await g.bot.send_message(
-        user_id,
-        f'{title}Результат отправлен'
-    )
-    os.remove(video)
-    del set_complex_result_cache[user_id]
-
-
 # endregion
 
 
