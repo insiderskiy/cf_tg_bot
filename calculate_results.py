@@ -13,7 +13,7 @@ import globals as g
 
 ComplexModel = collections.namedtuple("complex", ["complex_id",
                                                   "complex_name", "complex_video_url",
-                                                  "complex_rules", "is_time", "is_reps", "msg"])
+                                                  "complex_rules", "is_time_min", "is_time_max", "is_reps", "msg"])
 
 ResultModel = collections.namedtuple("result", ["username", "result", "msg"])
 
@@ -75,13 +75,16 @@ def __try_map_complex_msg(msg):
         complex_name = parts[1].replace('**', '')
         complex_video_url = parts[2].split('](')[1][:-1]
         complex_rules = parts[3]
-        is_time = False
+        is_time_min = False
+        is_time_max = False
         is_reps = False
-        if parts[4] == 'time':
-            is_time = True
+        if parts[4] == 'time' or parts[4] == "time_min":
+            is_time_min = True
+        elif parts[4] == "time_max":
+            is_time_max = True
         else:
             is_reps = True
-        return ComplexModel(complex_id, complex_name, complex_video_url, complex_rules, is_time, is_reps, msg)
+        return ComplexModel(complex_id, complex_name, complex_video_url, complex_rules, is_time_min, is_time_max, is_reps, msg)
     except:
         return None
 
@@ -185,7 +188,10 @@ def __process_single_complex(complex, all_results_models, all_users, score_list)
         results_grouped_sorted = sorted(results_grouped.items(), reverse=True)
     else:
         results_grouped = __fuck_python_group_by(complex_results, lambda i: __to_seconds(i))
-        results_grouped_sorted = sorted(results_grouped.items())
+        if complex_model.is_time_min:
+            results_grouped_sorted = sorted(results_grouped.items())
+        else:
+            results_grouped_sorted = sorted(results_grouped.items(), reverse=True)
     points = 5
     users_left = all_users.copy()
     for result_group in results_grouped_sorted:
@@ -198,6 +204,7 @@ def __process_single_complex(complex, all_results_models, all_users, score_list)
             points = 0
     for username in users_left:
         score_list.append(ScoreRecord(complex_id, username, empty_result, 0))
+
 
 # TODO Проверить наличие дублей, убирать предыдущие результаты, если есть более новые
 def __group_scores_by_user(score_list):

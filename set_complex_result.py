@@ -39,7 +39,8 @@ class ComplexModel:
     complex_name: str = None
     complex_video_url = None
     complex_rules: str = None
-    is_time: bool = False
+    is_time_min: bool = False
+    is_time_max: bool = False
     is_reps: bool = False
 
 
@@ -55,8 +56,10 @@ def parse_complex_from_msg(msg):
         model.complex_name = parts[1].replace('**', '')
         model.complex_video_url = parts[2].split('](')[1][:-1]
         model.complex_rules = parts[3]
-        if parts[4] == 'time':
-            model.is_time = True
+        if parts[4] == 'time' or parts[4] == 'time_min':
+            model.is_time_min = True
+        elif parts[4] == 'time_max':
+            model.is_time_max = True
         else:
             model.is_reps = True
         return model
@@ -82,7 +85,7 @@ async def __handle_set_result_init(user_id, complex_id, event):
     if result_model is not None:
         result_model.start_time = event.message.date
         set_complex_result_cache[user_id] = result_model
-        if result_model.complex.is_time:
+        if result_model.complex.is_time_min or result_model.complex.is_time_max:
             msg = "Укажите время выполнения комплекса. Формат - минуты:секунды"
         else:
             msg = "Укажите количество повторений"
@@ -114,7 +117,7 @@ async def __send_set_video(user_id):
 
 
 async def __process_set_time_or_reps(user_id, result_model, event):
-    if result_model.complex.is_time:
+    if result_model.complex.is_time_min or result_model.complex.is_time_max:
         time = event.text
         time_splitted = time.split(':')
         if (len(time_splitted) != 2
