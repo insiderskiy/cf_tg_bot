@@ -25,7 +25,8 @@ class CreateComplexModel:
     complex_name: str = None
     complex_video_url: str = None
     complex_rules: str = None
-    is_time: bool = False
+    is_time_min: bool = False
+    is_time_max: bool = False
     is_reps: bool = False
 
     def all_fields_set(self) -> bool:
@@ -35,7 +36,7 @@ class CreateComplexModel:
                 and self.complex_name is not None
                 and self.complex_video_url is not None
                 and self.complex_rules is not None
-                and (self.is_time != False or self.is_reps != False))
+                and (self.is_time_min != False or self.is_time_max != False or self.is_reps != False))
 
     def get_next_step(self) -> CreateComplexStep:
         if self.complex_id == -1:
@@ -50,7 +51,7 @@ class CreateComplexModel:
         elif self.complex_rules is None:
             return CreateComplexStep.SET_RULES
 
-        elif not self.is_reps and not self.is_time:
+        elif not self.is_reps and not self.is_time_min and not self.is_time_max:
             return CreateComplexStep.SET_TYPE
 
         else:
@@ -59,8 +60,10 @@ class CreateComplexModel:
     def create_text(self):
         if self.is_reps:
             t = "reps"
+        elif self.is_time_min:
+            t = "time_min"
         else:
-            t = "time"
+            t = "time_max"
         return (f"ID: <b>{self.complex_id}</b>\u00A0\n\n"
                 f"<b>{self.complex_name}</b>\u00A0\n\n"
                 f"<a href='{self.complex_video_url}'>Видео</a>\u00A0\n\n"
@@ -164,10 +167,17 @@ async def __handle_set_video(create_complex_model, user_id, event):
         )
 
 
-def __get_time_data(create_complex_model):
+def __get_time_data_min(create_complex_model):
     data = furl("/set_complex_result_type")
     data.add({'sid': create_complex_model.session_id})
-    data.add({'type': 'time'})
+    data.add({'type': 'time_min'})
+    return data
+
+
+def __get_time_data_max(create_complex_model):
+    data = furl("/set_complex_result_type")
+    data.add({'sid': create_complex_model.session_id})
+    data.add({'type': 'time_max'})
     return data
 
 
@@ -186,11 +196,15 @@ async def __handle_set_rules(create_complex_model, user_id, event):
         "Выберите тип результата",
         buttons=[
             Button.inline(
-                text="Время",
-                data=__get_time_data(create_complex_model)
+                text="Min time",
+                data=__get_time_data_min(create_complex_model)
             ),
             Button.inline(
-                text="Повторения",
+                text="Max time",
+                data=__get_time_data_max(create_complex_model)
+            ),
+            Button.inline(
+                text="Reps",
                 data=__get_reps_data(create_complex_model)
             ),
             Button.inline(
@@ -204,8 +218,10 @@ async def __handle_set_rules(create_complex_model, user_id, event):
 async def __handle_set_type(create_complex_model, user_id, query):
     if await __validate_session_id(create_complex_model, user_id, query):
         type = furl(query.data.decode('utf-8')).args['type']
-        if type == "time":
-            create_complex_model.is_time = True
+        if type == "time" or type == "time_min":
+            create_complex_model.is_time_min = True
+        elif type == "time_max":
+            create_complex_model.is_time_max = True
         elif type == "reps":
             create_complex_model.is_reps = True
         await gather(
