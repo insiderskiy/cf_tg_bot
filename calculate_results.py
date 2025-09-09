@@ -334,7 +334,8 @@ async def __create_results_table(scores_grouped_by_user, all_complexes, start, e
     image.save('table.png', quality=100)
     await g.bot.send_file(
         g.CHANNEL_WITH_COMPLEXES,
-        'table.png'
+        file='table.png',
+        force_document=True,
     )
     os.remove('table.png')
 
@@ -429,11 +430,11 @@ async def generate_results(query):
     elif 'curr_week' in date_mark:
         start, end = __get_week_bounds(now)
     elif 'prev_month' in date_mark:
-        start, end = __get_month_bounds(now - relativedelta(month=1))
+        start, end = __get_month_bounds(now - relativedelta(months=1))
     elif 'curr_month' in date_mark:
         start, end = __get_month_bounds(now)
     elif 'prev_quarter' in date_mark:
-        start, end = __get_quarter_bounds(now - relativedelta(month=3))
+        start, end = __get_quarter_bounds(now - relativedelta(months=3))
     else:
         start, end = __get_quarter_bounds(now)
     all_complexes = await __get_complexes(start, end)
