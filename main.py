@@ -66,7 +66,7 @@ async def handle_interaction_none(event, user_id, user_name):
                 "Выберите действие",
                 buttons=[
                     Button.inline(
-                        text="Добавить комплекс",
+                        text="Добавление комплекса",
                         data=data
                     ),
                 ],
