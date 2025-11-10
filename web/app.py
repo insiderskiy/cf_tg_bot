@@ -1,6 +1,9 @@
+from dotenv import load_dotenv
 from flask import Flask, render_template_string, redirect, url_for, request
 import subprocess
 import os
+
+load_dotenv()
 
 app = Flask(__name__)
 
