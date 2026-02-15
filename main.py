@@ -46,7 +46,7 @@ async def is_participant(id) -> bool:
     return False
 
 #comment
-
+#comment
 def get_start_action(event):
     arr = event.message.text.split(' ')
     if len(arr) > 1:
