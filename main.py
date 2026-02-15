@@ -45,6 +45,7 @@ async def is_participant(id) -> bool:
             return True
     return False
 
+#comment
 
 def get_start_action(event):
     arr = event.message.text.split(' ')
